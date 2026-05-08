@@ -1,0 +1,10 @@
+{"id": "gen-1", "category": "general", "type": "keywords", "prompt": "What is the capital of France?", "keywords": ["paris"]}
+{"id": "gen-2", "category": "general", "type": "keywords", "prompt": "What is the boiling point of water at sea level in Celsius?", "keywords": ["100"]}
+{"id": "gen-3", "category": "general", "type": "keywords", "prompt": "Who wrote Romeo and Juliet?", "keywords": ["shakespeare"]}
+{"id": "gen-4", "category": "general", "type": "keywords", "prompt": "What planet is closest to the Sun?", "keywords": ["mercury"]}
+{"id": "gen-5", "category": "general", "type": "keywords", "prompt": "What is the chemical symbol for gold?", "keywords": ["au"]}
+{"id": "gen-6", "category": "general", "type": "keywords", "prompt": "How many days are in a leap year?", "keywords": ["366"]}
+{"id": "gen-7", "category": "general", "type": "keywords", "prompt": "What is the speed of light in a vacuum (approximately, in km/s)?", "keywords": ["300000", "299792"]}
+{"id": "gen-8", "category": "general", "type": "keywords", "prompt": "What is the largest ocean on Earth?", "keywords": ["pacific"]}
+{"id": "gen-9", "category": "general", "type": "keywords", "prompt": "In what year did World War II end?", "keywords": ["1945"]}
+{"id": "gen-10", "category": "general", "type": "keywords", "prompt": "What is the main gas in Earth's atmosphere?", "keywords": ["nitrogen"]}

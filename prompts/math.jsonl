@@ -1,0 +1,10 @@
+{"id": "math-1", "category": "math", "type": "keywords", "prompt": "What is 144 divided by 12?", "keywords": ["12"]}
+{"id": "math-2", "category": "math", "type": "keywords", "prompt": "What is the square root of 144?", "keywords": ["12"]}
+{"id": "math-3", "category": "math", "type": "keywords", "prompt": "What is 15% of 200?", "keywords": ["30"]}
+{"id": "math-4", "category": "math", "type": "keywords", "prompt": "If x + 5 = 12, what is x?", "keywords": ["7"]}
+{"id": "math-5", "category": "math", "type": "keywords", "prompt": "What is 2 to the power of 10?", "keywords": ["1024"]}
+{"id": "math-6", "category": "math", "type": "keywords", "prompt": "What is the area of a circle with radius 5? Use pi = 3.14159.", "keywords": ["78"]}
+{"id": "math-7", "category": "math", "type": "mcq", "prompt": "Solve: 3x - 7 = 14. What is x?\nA) 7\nB) 3\nC) 21\nD) 9\nAnswer with only the letter.", "answer": "A"}
+{"id": "math-8", "category": "math", "type": "keywords", "prompt": "How many prime numbers are between 1 and 10?", "keywords": ["4"]}
+{"id": "math-9", "category": "math", "type": "keywords", "prompt": "What is the sum of angles in a triangle in degrees?", "keywords": ["180"]}
+{"id": "math-10", "category": "math", "type": "mcq", "prompt": "A rectangle has length 8 and width 5. What is its perimeter?\nA) 40\nB) 26\nC) 13\nD) 20\nAnswer with only the letter.", "answer": "B"}

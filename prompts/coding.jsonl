@@ -1,0 +1,10 @@
+{"id": "code-1", "category": "coding", "type": "keywords", "prompt": "Write a Python function that reverses a string. Just show the function.", "keywords": ["def", "return", "::-1"]}
+{"id": "code-2", "category": "coding", "type": "keywords", "prompt": "Write a Python function to check if a number is prime. Just the function.", "keywords": ["def", "prime", "return"]}
+{"id": "code-3", "category": "coding", "type": "keywords", "prompt": "What does the Python list method append() do?", "keywords": ["add", "end", "list"]}
+{"id": "code-4", "category": "coding", "type": "keywords", "prompt": "Write a SQL query to select all rows from a table called 'users' where age > 18.", "keywords": ["select", "from", "where", "age"]}
+{"id": "code-5", "category": "coding", "type": "keywords", "prompt": "What is a Python decorator? Give a one-sentence explanation.", "keywords": ["function", "wrap"]}
+{"id": "code-6", "category": "coding", "type": "keywords", "prompt": "Write a Python one-liner to get all even numbers from a list called nums.", "keywords": ["for", "if", "2"]}
+{"id": "code-7", "category": "coding", "type": "keywords", "prompt": "What is the time complexity of binary search?", "keywords": ["log"]}
+{"id": "code-8", "category": "coding", "type": "keywords", "prompt": "Write a Python function that returns the factorial of n using recursion.", "keywords": ["def", "return", "factorial", "n-1"]}
+{"id": "code-9", "category": "coding", "type": "keywords", "prompt": "What does 'git rebase' do compared to 'git merge'?", "keywords": ["commit", "history", "linear"]}
+{"id": "code-10", "category": "coding", "type": "keywords", "prompt": "What is a REST API?", "keywords": ["http", "request", "response"]}
