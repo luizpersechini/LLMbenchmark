@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import statistics
 import time
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
@@ -13,8 +13,7 @@ from ..config import Config, get_config
 from ..metrics.types import BenchmarkResult, GenerationResult, LatencyStats
 from .base import peak_rss_mb
 
-
-_LATENCY_PROMPT = "Hello, how are you?"   # short prompt → TTFT dominated by model, not input
+_LATENCY_PROMPT = "Hello, how are you?"  # short prompt → TTFT dominated by model, not input
 
 
 class LatencyBenchmark:
@@ -26,7 +25,7 @@ class LatencyBenchmark:
         backend: BaseBackend,
         model: str,
         prompt: str = _LATENCY_PROMPT,
-        max_tokens: int = 1,            # just first token
+        max_tokens: int = 1,  # just first token
         runs: int | None = None,
         warmup: int | None = None,
         on_progress: Callable[[int, int], None] | None = None,

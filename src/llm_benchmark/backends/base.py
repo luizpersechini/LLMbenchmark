@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator
 
 
 class BackendError(Exception):

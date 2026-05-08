@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -57,13 +56,25 @@ class TestResultsCommand:
 
     def test_json_output(self, runner):
         row = {
-            "model": "llama3", "backend": "ollama", "bench_type": "speed",
-            "mean_tps": 42.0, "std_tps": 1.0, "min_tps": 40.0, "max_tps": 44.0,
-            "ttft_p50_ms": None, "ttft_p95_ms": None, "ttft_p99_ms": None,
-            "mean_rss_mb": 500.0, "peak_rss_mb": 550.0,
-            "mean_metal_mb": 0.0, "peak_metal_mb": 0.0,
-            "quality_score": None, "quality_details": None, "run_count": 3,
-            "timestamp": "2024-01-01T00:00:00", "id": 1,
+            "model": "llama3",
+            "backend": "ollama",
+            "bench_type": "speed",
+            "mean_tps": 42.0,
+            "std_tps": 1.0,
+            "min_tps": 40.0,
+            "max_tps": 44.0,
+            "ttft_p50_ms": None,
+            "ttft_p95_ms": None,
+            "ttft_p99_ms": None,
+            "mean_rss_mb": 500.0,
+            "peak_rss_mb": 550.0,
+            "mean_metal_mb": 0.0,
+            "peak_metal_mb": 0.0,
+            "quality_score": None,
+            "quality_details": None,
+            "run_count": 3,
+            "timestamp": "2024-01-01T00:00:00",
+            "id": 1,
         }
         with patch("llm_benchmark.cli.Database") as mock_db_cls:
             mock_db = MagicMock()
@@ -86,15 +97,26 @@ class TestReportCommand:
 
     def test_generates_report(self, runner, tmp_path):
         rows = [
-            {"model": "a", "backend": "ollama", "bench_type": "speed",
-             "mean_tps": 50.0, "std_tps": 1.0, "ttft_p50_ms": None,
-             "ttft_p95_ms": None, "peak_rss_mb": 500.0,
-             "mean_metal_mb": 0.0, "peak_metal_mb": 0.0,
-             "quality_score": None, "timestamp": "2024-01-01T00:00:00"},
+            {
+                "model": "a",
+                "backend": "ollama",
+                "bench_type": "speed",
+                "mean_tps": 50.0,
+                "std_tps": 1.0,
+                "ttft_p50_ms": None,
+                "ttft_p95_ms": None,
+                "peak_rss_mb": 500.0,
+                "mean_metal_mb": 0.0,
+                "peak_metal_mb": 0.0,
+                "quality_score": None,
+                "timestamp": "2024-01-01T00:00:00",
+            },
         ]
-        with patch("llm_benchmark.cli.Database") as mock_db_cls, \
-             patch("llm_benchmark.cli.generate_charts") as mock_charts, \
-             patch("llm_benchmark.cli.generate_html_report") as mock_html:
+        with (
+            patch("llm_benchmark.cli.Database") as mock_db_cls,
+            patch("llm_benchmark.cli.generate_charts") as mock_charts,
+            patch("llm_benchmark.cli.generate_html_report") as mock_html,
+        ):
             mock_db = MagicMock()
             mock_db.query.return_value = rows
             mock_db_cls.return_value = mock_db

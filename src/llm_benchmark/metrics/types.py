@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any
 
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
-from typing import Any
 
 
 @dataclass
@@ -21,11 +21,11 @@ class GenerationResult:
     output: str
     prompt_tokens: int
     output_tokens: int
-    time_to_first_token_s: float      # seconds
-    total_time_s: float               # seconds
+    time_to_first_token_s: float  # seconds
+    total_time_s: float  # seconds
     tokens_per_second: float
-    peak_rss_mb: float                # process RSS at peak
-    peak_metal_mb: float              # Metal GPU memory (unified, macOS only)
+    peak_rss_mb: float  # process RSS at peak
+    peak_metal_mb: float  # Metal GPU memory (unified, macOS only)
     timestamp: datetime = field(default_factory=_now)
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -50,7 +50,7 @@ class BenchmarkResult:
 
     model: str
     backend: str
-    benchmark_type: str          # "speed", "latency", "memory", "quality"
+    benchmark_type: str  # "speed", "latency", "memory", "quality"
     prompt_set: str
 
     # Speed
@@ -69,7 +69,7 @@ class BenchmarkResult:
     peak_metal_mb: float = 0.0
 
     # Quality
-    quality_score: float | None = None   # 0.0 – 1.0
+    quality_score: float | None = None  # 0.0 – 1.0
     quality_details: dict[str, Any] = field(default_factory=dict)
 
     runs: int = 0

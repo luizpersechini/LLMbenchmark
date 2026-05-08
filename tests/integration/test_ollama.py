@@ -9,9 +9,9 @@ from __future__ import annotations
 import pytest
 
 from llm_benchmark.backends.ollama import OllamaBackend
-from llm_benchmark.benchmarks.speed import SpeedBenchmark
 from llm_benchmark.benchmarks.latency import LatencyBenchmark
 from llm_benchmark.benchmarks.memory import MemoryBenchmark
+from llm_benchmark.benchmarks.speed import SpeedBenchmark
 
 
 @pytest.fixture(scope="module")

@@ -1,12 +1,12 @@
 """Tests for SQLite storage."""
 
-import pytest
 from datetime import datetime, timezone
-from pathlib import Path
+
+import pytest
 
 from llm_benchmark.config import Config
-from llm_benchmark.storage import Database
 from llm_benchmark.metrics.types import BenchmarkResult, LatencyStats
+from llm_benchmark.storage import Database
 
 
 @pytest.fixture
@@ -41,7 +41,9 @@ def _latency_result(model="llama3:8b") -> BenchmarkResult:
         backend="ollama",
         benchmark_type="latency",
         prompt_set="general",
-        latency=LatencyStats(p50_ms=120, p95_ms=200, p99_ms=250, mean_ms=130, min_ms=100, max_ms=300),
+        latency=LatencyStats(
+            p50_ms=120, p95_ms=200, p99_ms=250, mean_ms=130, min_ms=100, max_ms=300
+        ),
         runs=5,
         timestamp=datetime.now(timezone.utc),
     )

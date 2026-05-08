@@ -1,37 +1,1474 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>LLM Benchmark Report</title>
-<style>
-  body { font-family: system-ui, sans-serif; max-width: 960px; margin: 40px auto; color: #222; }
-  h1 { border-bottom: 2px solid #4C9BE8; padding-bottom: 8px; }
-  table { border-collapse: collapse; width: 100%; margin: 24px 0; }
-  th { background: #4C9BE8; color: white; padding: 8px 12px; text-align: left; }
-  td { padding: 6px 12px; border-bottom: 1px solid #eee; }
-  tr:hover { background: #f5f9ff; }
-  .section { margin-top: 40px; }
-  footer { color: #999; font-size: 12px; margin-top: 40px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>llm-bench — Local Inference Benchmark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0b;
+      --surface:  #111114;
+      --raise:    #16161a;
+      --line:     #1d1d22;
+      --line-2:   #2a2a31;
+      --text:     #ece8e0;
+      --muted:    #8a8a92;
+      --dim:      #4a4a52;
+
+      --citron:   oklch(0.82 0.13 110); /* speed / positive */
+      --ember:    oklch(0.68 0.16 35);  /* latency / heat */
+      --ink:      oklch(0.78 0.04 240); /* neutral accent */
+      --violet:   oklch(0.66 0.13 290); /* quality */
+
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --serif: 'Instrument Serif', 'Times New Roman', serif;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); }
+    body { font-family: var(--mono); font-size: 13px; font-weight: 400; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+
+    #root { min-height: 100vh; }
+
+    .serif { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; }
+    .serif-i { font-family: var(--serif); font-style: italic; font-weight: 400; }
+
+    .mono-xs { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .mono-num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+    /* live dot */
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--citron);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--citron), transparent 80%);
+      animation: pulse 1.6s ease-in-out infinite;
+      flex: none;
+    }
+
+    /* shimmer for running rows */
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .shimmer-line {
+      position: relative; overflow: hidden;
+    }
+    .shimmer-line::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--citron), transparent 88%), transparent);
+      animation: shimmer 2.4s linear infinite;
+    }
+  </style>
 </head>
 <body>
-<h1>LLM Benchmark Report</h1>
-<p>Generated: 2026-05-08 12:34 UTC &mdash; 0 run(s)</p>
-<div class="section">
-<h2>Charts</h2>
+<div id="root"></div>
 
-</div>
-<div class="section">
-<h2>Raw Results</h2>
-<table>
-<tr>
-  <th>Model</th><th>Backend</th><th>Type</th>
-  <th>Mean TPS</th><th>TTFT P50</th><th>Peak RSS</th>
-  <th>Quality</th><th>Timestamp</th>
-</tr>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef } = React;
 
-</table>
-</div>
-<footer>llm-benchmark &mdash; Apple Silicon M-series</footer>
+// ─── TWEAK DEFAULTS ──────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = {
+  "accent": "citron",
+  "density": "comfortable",
+  "showHero": true,
+  "rankBy": "tok_s",
+  "chartStyle": "stepped"
+};
+
+// ─── DATA (injected from llm-bench SQLite results) ────────────────────────────
+// ─── DATA (from llm-bench SQLite results) ──────────────────────────────────
+const HARDWARE = {
+  "chip": "Apple Silicon",
+  "cores": "\u2014",
+  "unified": "\u2014 GB",
+  "unifiedMB": 0,
+  "os": "macOS"
+};
+
+const RUN = {
+  "id": "run_2026-05-08T12-37-35Z",
+  "started": "2026-05-08 12:37:35",
+  "duration": "\u2014",
+  "totalRuns": 27,
+  "warmup": 1,
+  "promptSet": "general"
+};
+
+const MODELS = [
+  {
+    "id": "llama3.2:3b",
+    "fam": "Llama 3.2",
+    "params": "3 B",
+    "backend": "ollama",
+    "quant": "Q4_K_M",
+    "tok_s": 38.4,
+    "ttft_p50": 145,
+    "ttft_p95": 320,
+    "ttft_p99": 480,
+    "rss": 2150,
+    "metal": 890,
+    "qual": {
+      "coding": 62,
+      "reasoning": 71,
+      "math": 58,
+      "general": 78
+    },
+    "status": "done"
+  },
+  {
+    "id": "qwen2.5:7b",
+    "fam": "Qwen 2.5",
+    "params": "7 B",
+    "backend": "ollama",
+    "quant": "Q4_K_M",
+    "tok_s": 24.1,
+    "ttft_p50": 280,
+    "ttft_p95": 510,
+    "ttft_p99": 720,
+    "rss": 4480,
+    "metal": 2100,
+    "qual": {
+      "coding": 81,
+      "reasoning": 76,
+      "math": 84,
+      "general": 79
+    },
+    "status": "done"
+  },
+  {
+    "id": "gemma2:9b",
+    "fam": "Gemma 2",
+    "params": "9 B",
+    "backend": "ollama",
+    "quant": "Q4_K_M",
+    "tok_s": 18.7,
+    "ttft_p50": 410,
+    "ttft_p95": 760,
+    "ttft_p99": 980,
+    "rss": 5320,
+    "metal": 2560,
+    "qual": {
+      "coding": 73,
+      "reasoning": 82,
+      "math": 71,
+      "general": 85
+    },
+    "status": "done"
+  },
+  {
+    "id": "mistral:7b",
+    "fam": "Mistral",
+    "params": "7 B",
+    "backend": "ollama",
+    "quant": "Q4_K_M",
+    "tok_s": 26.3,
+    "ttft_p50": 220,
+    "ttft_p95": 480,
+    "ttft_p99": 640,
+    "rss": 4180,
+    "metal": 1980,
+    "qual": {
+      "coding": 68,
+      "reasoning": 74,
+      "math": 63,
+      "general": 80
+    },
+    "status": "done"
+  }
+];
+
+const RUN_HISTORY = [
+  {
+    "id": "2026-05-08T11:07Z",
+    "date": "May 8",
+    "models": 4,
+    "dur": "90m 00s",
+    "avg_tok": 26.9,
+    "top": "llama3.2:3b",
+    "tag": "current"
+  },
+  {
+    "id": "2026-05-07T12:37Z",
+    "date": "May 7",
+    "models": 1,
+    "dur": "\u2014",
+    "avg_tok": 36.4,
+    "top": "llama3.2:3b"
+  },
+  {
+    "id": "2026-05-06T12:37Z",
+    "date": "May 6",
+    "models": 1,
+    "dur": "\u2014",
+    "avg_tok": 36.8,
+    "top": "llama3.2:3b"
+  },
+  {
+    "id": "2026-05-05T12:37Z",
+    "date": "May 5",
+    "models": 1,
+    "dur": "\u2014",
+    "avg_tok": 37.2,
+    "top": "llama3.2:3b"
+  },
+  {
+    "id": "2026-05-04T12:37Z",
+    "date": "May 4",
+    "models": 1,
+    "dur": "\u2014",
+    "avg_tok": 37.6,
+    "top": "llama3.2:3b"
+  },
+  {
+    "id": "2026-05-03T12:37Z",
+    "date": "May 3",
+    "models": 1,
+    "dur": "\u2014",
+    "avg_tok": 38.0,
+    "top": "llama3.2:3b"
+  }
+];
+
+const SPOTLIGHT_ID = "qwen2.5:7b";
+
+const PROMPT_BREAKDOWN = [
+  {
+    "set": "coding",
+    "n": 20,
+    "score": 81,
+    "tok_s": 24.1
+  },
+  {
+    "set": "reasoning",
+    "n": 20,
+    "score": 76,
+    "tok_s": 24.1
+  },
+  {
+    "set": "math",
+    "n": 20,
+    "score": 84,
+    "tok_s": 24.1
+  },
+  {
+    "set": "general",
+    "n": 20,
+    "score": 79,
+    "tok_s": 24.1
+  }
+];
+
+const MEM_TIMELINE = [448, 896, 1344, 1792, 2240, 2688, 3136, 3584, 4032, 4480, 4458, 4480, 4502, 4458, 4480, 4502, 4458, 4480, 4502, 4458, 4480, 4502, 4458, 4480, 4502, 4458, 4480, 4502, 4458, 4480];
+
+// ─── LATENCY HISTOGRAM GENERATOR ─────────────────────────────────────────────
+// Synthesizes a plausible histogram from stored p50/p95 percentiles
+function makeHist(p50, p95) {
+  if (!p50 || !p95) return [];
+  const buckets = 24;
+  const max = p95 * 1.6;
+  const min = p50 * 0.4;
+  const step = (max - min) / buckets;
+  const arr = [];
+  for (let i = 0; i < buckets; i++) {
+    const x = min + i * step;
+    const t = (x - p50) / (p95 - p50);
+    const v = Math.exp(-Math.pow(t, 2) * 1.4) * 100 + Math.random() * 8;
+    arr.push({ x: Math.round(x), v });
+  }
+  return arr;
+}
+
+// ─── HOOKS ───────────────────────────────────────────────────────────────────
+const Tweaks = (window.useTweaks || (() => [TWEAK_DEFAULTS, () => {}]));
+
+// ─── SMALL ATOMS ─────────────────────────────────────────────────────────────
+function Crosshair() {
+  return (
+    <span style={{ display: 'inline-block', width: 8, height: 8, position: 'relative' }}>
+      <span style={{ position: 'absolute', left: 3, top: 0, width: 1, height: 8, background: 'currentColor', opacity: 0.6 }} />
+      <span style={{ position: 'absolute', left: 0, top: 3, width: 8, height: 1, background: 'currentColor', opacity: 0.6 }} />
+    </span>
+  );
+}
+
+function StatusDot({ status }) {
+  if (status === 'running') return <span className="live-dot" />;
+  if (status === 'queued')  return <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'transparent', border: '1px solid var(--dim)' }} />;
+  return <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--dim)' }} />;
+}
+
+function Bar({ value, max, color = 'var(--text)', height = 4 }) {
+  const pct = Math.min(100, (value / (max || 1)) * 100);
+  return (
+    <div style={{ width: '100%', height, background: 'var(--line)', position: 'relative' }}>
+      <div style={{ width: `${pct}%`, height: '100%', background: color }} />
+    </div>
+  );
+}
+
+// ─── HEADER ──────────────────────────────────────────────────────────────────
+const NAV = ['overview', 'runs', 'compare', 'prompts', 'settings'];
+function Header({ view, setView }) {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const time = now.toISOString().replace('T', ' ').slice(0, 19) + 'Z';
+  return (
+    <header style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr auto 1fr',
+      alignItems: 'center',
+      padding: '18px 32px',
+      borderBottom: '1px solid var(--line)',
+      gap: 24,
+      position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 26, height: 26, border: '1px solid var(--line-2)',
+          display: 'grid', placeItems: 'center', position: 'relative'
+        }}>
+          <span style={{
+            width: 8, height: 8, background: 'var(--citron)',
+            boxShadow: '0 0 0 2px color-mix(in oklab, var(--citron), transparent 70%)',
+          }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+          <span className="serif" style={{ fontSize: 18 }}>llm-bench</span>
+          <span className="mono-xs">local inference · Apple Silicon</span>
+        </div>
+      </div>
+
+      <nav style={{ display: 'flex', gap: 28 }}>
+        {NAV.map((label) => {
+          const active = view === label;
+          return (
+            <button key={label} onClick={() => setView(label)} className="mono-xs" style={{
+              color: active ? 'var(--text)' : 'var(--muted)',
+              paddingBottom: 4,
+              borderBottom: active ? '1px solid var(--text)' : '1px solid transparent',
+              background: 'none', cursor: 'pointer',
+              transition: 'color 120ms',
+            }}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--muted)'; }}
+            >{label}</button>
+          );
+        })}
+      </nav>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 18 }}>
+        <span className="mono-xs">{HARDWARE.chip} · {HARDWARE.unified}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="live-dot" />
+          <span className="mono-xs">{time}</span>
+        </span>
+      </div>
+    </header>
+  );
+}
+
+// ─── HERO LEDE ───────────────────────────────────────────────────────────────
+function HeroLede({ models }) {
+  if (!models || models.length === 0) return null;
+  const fastest = [...models].sort((a, b) => b.tok_s - a.tok_s)[0];
+  const smartest = [...models].sort((a, b) => {
+    const sa = (a.qual.coding + a.qual.reasoning + a.qual.math + a.qual.general) / 4;
+    const sb = (b.qual.coding + b.qual.reasoning + b.qual.math + b.qual.general) / 4;
+    return sb - sa;
+  })[0];
+  return (
+    <section style={{
+      display: 'grid',
+      gridTemplateColumns: '1.6fr 1fr',
+      borderBottom: '1px solid var(--line)',
+    }}>
+      <div style={{ padding: '56px 32px 48px', borderRight: '1px solid var(--line)' }}>
+        <div className="mono-xs" style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 28 }}>
+          <Crosshair />
+          <span>Run · {RUN.id}</span>
+          <span style={{ color: 'var(--dim)' }}>—</span>
+          <span style={{ color: 'var(--muted)' }}>{RUN.started} · {RUN.duration}</span>
+        </div>
+        <h1 className="serif" style={{
+          fontSize: 84, lineHeight: 0.96, letterSpacing: '-0.02em',
+          fontWeight: 400, marginBottom: 32, maxWidth: 880,
+        }}>
+          {models.length} model{models.length !== 1 ? 's' : ''}, <span className="serif-i">one laptop,</span><br />
+          {RUN.totalRuns} prompts at <span style={{ color: 'var(--citron)' }}>{fastest.tok_s.toFixed(1)} tok/s</span> peak.
+        </h1>
+        <p className="serif" style={{ fontSize: 19, color: 'var(--muted)', maxWidth: 620, lineHeight: 1.45 }}>
+          Sustained generation, time-to-first-token percentiles, peak resident memory, and scored
+          quality across {PROMPT_BREAKDOWN.length} prompt sets — measured locally on {HARDWARE.chip} with
+          unified memory and Metal acceleration.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr' }}>
+        <HeroStat
+          eyebrow="Fastest sustained"
+          value={fastest.tok_s.toFixed(1)}
+          unit="tok/s"
+          model={fastest.id}
+          accent="var(--citron)"
+        />
+        <div style={{ borderTop: '1px solid var(--line)' }}>
+          <HeroStat
+            eyebrow="Highest scored"
+            value={Math.round((smartest.qual.coding + smartest.qual.reasoning + smartest.qual.math + smartest.qual.general) / 4)}
+            unit="/100"
+            model={smartest.id}
+            accent="var(--violet)"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HeroStat({ eyebrow, value, unit, model, accent }) {
+  return (
+    <div style={{ padding: '40px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <span className="mono-xs">{eyebrow}</span>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <span className="serif mono-num" style={{ fontSize: 88, lineHeight: 0.9, color: accent }}>{value}</span>
+          <span className="mono-xs" style={{ color: 'var(--muted)' }}>{unit}</span>
+        </div>
+        <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 13 }}>{model}</span>
+          <span className="mono-xs">→ spotlight</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── LEADERBOARD TABLE ───────────────────────────────────────────────────────
+function Leaderboard({ models, rankBy, onSelect, selected }) {
+  const sorted = useMemo(() => {
+    const score = m => (m.qual.coding + m.qual.reasoning + m.qual.math + m.qual.general) / 4;
+    const cmp = {
+      tok_s:    (a, b) => b.tok_s - a.tok_s,
+      ttft:     (a, b) => a.ttft_p50 - b.ttft_p50,
+      memory:   (a, b) => a.rss - b.rss,
+      quality:  (a, b) => score(b) - score(a),
+    }[rankBy] || ((a, b) => b.tok_s - a.tok_s);
+    return [...models].sort(cmp);
+  }, [models, rankBy]);
+
+  const maxTok = Math.max(...models.map(m => m.tok_s), 1);
+  const maxTtft = Math.max(...models.map(m => m.ttft_p99), 1);
+  const maxMem = Math.max(...models.map(m => m.rss), 1);
+
+  const score = m => (m.qual.coding + m.qual.reasoning + m.qual.math + m.qual.general) / 4;
+
+  return (
+    <section style={{ borderBottom: '1px solid var(--line)' }}>
+      <SectionHead num="01" title="Leaderboard" caption={`Ranked by ${rankBy === 'tok_s' ? 'sustained throughput' : rankBy === 'ttft' ? 'TTFT P50' : rankBy === 'memory' ? 'peak RSS' : 'quality'} · ${models.length} models`} />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '38px 2fr 0.8fr 1.6fr 1.4fr 1.4fr 1.4fr 0.8fr',
+        padding: '14px 32px',
+        borderTop: '1px solid var(--line)',
+        borderBottom: '1px solid var(--line)',
+      }}>
+        {['#', 'Model', 'Backend', 'Throughput', 'TTFT (ms) p50 / p95', 'Peak memory', 'Quality avg', ''].map((h, i) => (
+          <span key={i} className="mono-xs" style={{ textAlign: 'left' }}>{h}</span>
+        ))}
+      </div>
+      {sorted.map((m, i) => {
+        const isSel = m.id === selected;
+        const s = score(m);
+        return (
+          <button key={m.id}
+            onClick={() => onSelect(m.id)}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '38px 2fr 0.8fr 1.6fr 1.4fr 1.4fr 1.4fr 0.8fr',
+              padding: '20px 32px',
+              borderBottom: '1px solid var(--line)',
+              alignItems: 'center',
+              width: '100%',
+              textAlign: 'left',
+              background: isSel ? 'color-mix(in oklab, var(--citron), transparent 94%)' : 'transparent',
+              transition: 'background 120ms ease',
+            }}
+            onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = 'var(--surface)'; }}
+            onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <span className="mono-num" style={{ color: 'var(--muted)', fontSize: 12 }}>{String(i + 1).padStart(2, '0')}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <StatusDot status={m.status} />
+                <span style={{ fontSize: 14 }}>{m.id}</span>
+                {m.status === 'running' && <span className="mono-xs" style={{ color: 'var(--citron)' }}>· running</span>}
+                {m.status === 'queued'  && <span className="mono-xs" style={{ color: 'var(--dim)' }}>· queued</span>}
+              </span>
+              <span className="mono-xs">{m.fam} · {m.params} · {m.quant}</span>
+            </div>
+            <span className="mono-xs" style={{ color: 'var(--muted)' }}>{m.backend}</span>
+            <div className={m.status === 'running' ? 'shimmer-line' : ''} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="mono-num" style={{ fontSize: 14, color: 'var(--citron)' }}>{m.tok_s.toFixed(1)}</span>
+                <span className="mono-xs">tok/s</span>
+              </span>
+              <Bar value={m.tok_s} max={maxTok} color="var(--citron)" height={2} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span className="mono-num" style={{ fontSize: 14 }}>
+                {m.ttft_p50 || '—'}<span style={{ color: 'var(--dim)' }}> / </span>{m.ttft_p95 || '—'}
+              </span>
+              <Bar value={m.ttft_p95} max={maxTtft} color="var(--ember)" height={2} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="mono-num" style={{ fontSize: 14 }}>{m.rss ? (m.rss / 1024).toFixed(2) : '—'}</span>
+                <span className="mono-xs">GB</span>
+              </span>
+              <Bar value={m.rss} max={maxMem} color="var(--ink)" height={2} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="mono-num" style={{ fontSize: 14, color: 'var(--violet)' }}>{s.toFixed(0)}</span>
+              <QualityRibbon q={m.qual} />
+            </div>
+            <span className="mono-xs" style={{ textAlign: 'right', color: isSel ? 'var(--citron)' : 'var(--dim)' }}>
+              {isSel ? '◉' : '○'}
+            </span>
+          </button>
+        );
+      })}
+    </section>
+  );
+}
+
+function QualityRibbon({ q }) {
+  const cats = [['C', q.coding], ['R', q.reasoning], ['M', q.math], ['G', q.general]];
+  return (
+    <div style={{ display: 'flex', gap: 2, flex: 1 }}>
+      {cats.map(([k, v]) => (
+        <div key={k} title={`${k}: ${v}`} style={{
+          height: 14,
+          flex: 1,
+          background: `color-mix(in oklab, var(--violet), transparent ${100 - v}%)`,
+          borderTop: '1px solid color-mix(in oklab, var(--violet), transparent 60%)',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── SECTION HEAD ────────────────────────────────────────────────────────────
+function SectionHead({ num, title, caption, right }) {
+  return (
+    <div style={{
+      padding: '32px 32px 20px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      gap: 24,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 24 }}>
+        <span className="mono-xs" style={{ color: 'var(--dim)' }}>§ {num}</span>
+        <h2 className="serif" style={{ fontSize: 36, fontWeight: 400, letterSpacing: '-0.01em' }}>
+          {title}
+        </h2>
+        {caption && <span className="mono-xs" style={{ color: 'var(--muted)' }}>{caption}</span>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+// ─── SPOTLIGHT ───────────────────────────────────────────────────────────────
+function Spotlight({ model }) {
+  const hist = useMemo(() => makeHist(model.ttft_p50, model.ttft_p95), [model]);
+  const score = (model.qual.coding + model.qual.reasoning + model.qual.math + model.qual.general) / 4;
+  const unifiedMB = (HARDWARE.unifiedMB || 24576);
+
+  return (
+    <section style={{ borderBottom: '1px solid var(--line)' }}>
+      <SectionHead
+        num="02"
+        title={<>Spotlight <span className="serif-i" style={{ color: 'var(--muted)' }}>· {model.id}</span></>}
+        caption={`${model.backend} · ${model.params} · ${model.quant}`}
+        right={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="mono-xs" style={chipStyle(true)}>Compare</button>
+            <button className="mono-xs" style={chipStyle()}>Export</button>
+          </div>
+        }
+      />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1.1fr 1.4fr 1fr',
+        borderTop: '1px solid var(--line)',
+      }}>
+        {/* KPI column */}
+        <div style={{ padding: 32, borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 28 }}>
+          <Kpi label="Sustained throughput"
+               value={model.tok_s.toFixed(1)}
+               unit="tok/s"
+               accent="var(--citron)"
+               sub={`${HARDWARE.chip}`}
+          />
+          <Kpi label="Time to first token"
+               value={model.ttft_p50 || '—'}
+               unit="ms · p50"
+               accent="var(--ember)"
+               sub={model.ttft_p50 ? `p95 ${model.ttft_p95}ms · p99 ${model.ttft_p99}ms` : 'not measured'}
+          />
+          <Kpi label="Peak resident memory"
+               value={model.rss ? (model.rss / 1024).toFixed(2) : '—'}
+               unit="GB · RSS"
+               accent="var(--ink)"
+               sub={model.metal ? `metal ${(model.metal / 1024).toFixed(2)} GB · ${(model.rss / unifiedMB * 100).toFixed(1)}% unified` : (model.rss ? `${(model.rss / unifiedMB * 100).toFixed(1)}% of unified` : 'not measured')}
+          />
+          <Kpi label="Quality score"
+               value={score.toFixed(0)}
+               unit="/100 · weighted"
+               accent="var(--violet)"
+               sub={`${RUN.totalRuns} prompts · ${PROMPT_BREAKDOWN.length} sets`}
+          />
+        </div>
+
+        {/* Latency histogram */}
+        <div style={{ padding: 32, borderRight: '1px solid var(--line)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
+            <span className="mono-xs">TTFT distribution · ms</span>
+            <span className="mono-xs" style={{ color: 'var(--muted)' }}>{model.ttft_p50 ? 'synthetic from p50/p95' : 'no data'}</span>
+          </div>
+          {model.ttft_p50 ? (
+            <>
+              <LatencyHistogram data={hist} p50={model.ttft_p50} p95={model.ttft_p95} p99={model.ttft_p99} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 24, borderTop: '1px solid var(--line)', paddingTop: 18 }}>
+                {[['p50', model.ttft_p50], ['p95', model.ttft_p95], ['p99', model.ttft_p99]].map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span className="mono-xs">{k}</span>
+                    <span className="mono-num" style={{ fontSize: 22, color: 'var(--ember)' }}>{v}<span className="mono-xs" style={{ color: 'var(--muted)', marginLeft: 4 }}>ms</span></span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: '40px 0', color: 'var(--dim)' }} className="mono-xs">Run with latency benchmark to see distribution.</div>
+          )}
+        </div>
+
+        {/* Memory timeline */}
+        <div style={{ padding: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
+            <span className="mono-xs">RSS during generation · MB</span>
+            <span className="mono-xs" style={{ color: 'var(--muted)' }}>{MEM_TIMELINE.length > 0 ? `${(MEM_TIMELINE.length * 0.5).toFixed(0)}s window` : 'no data'}</span>
+          </div>
+          {MEM_TIMELINE.length > 1 ? (
+            <>
+              <MemoryTimeline data={MEM_TIMELINE} peak={model.rss || Math.max(...MEM_TIMELINE)} unified={unifiedMB} />
+              <div style={{ marginTop: 24, borderTop: '1px solid var(--line)', paddingTop: 18, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <span className="mono-xs">Peak</span>
+                  <div className="mono-num" style={{ fontSize: 22, color: 'var(--ink)' }}>
+                    {((model.rss || 0) / 1024).toFixed(2)}<span className="mono-xs" style={{ color: 'var(--muted)', marginLeft: 4 }}>GB</span>
+                  </div>
+                </div>
+                <div>
+                  <span className="mono-xs">Headroom</span>
+                  <div className="mono-num" style={{ fontSize: 22 }}>
+                    {((unifiedMB - (model.rss || 0)) / 1024).toFixed(1)}<span className="mono-xs" style={{ color: 'var(--muted)', marginLeft: 4 }}>GB free</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: '40px 0', color: 'var(--dim)' }} className="mono-xs">Run with memory benchmark to see timeline.</div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function chipStyle(active) {
+  return {
+    padding: '7px 14px',
+    border: `1px solid ${active ? 'var(--text)' : 'var(--line-2)'}`,
+    background: active ? 'var(--text)' : 'transparent',
+    color: active ? 'var(--bg)' : 'var(--muted)',
+    cursor: 'pointer',
+  };
+}
+
+function Kpi({ label, value, unit, sub, accent }) {
+  return (
+    <div>
+      <div className="mono-xs" style={{ marginBottom: 8 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span className="serif mono-num" style={{ fontSize: 48, lineHeight: 0.95, color: accent }}>{value}</span>
+        <span className="mono-xs">{unit}</span>
+      </div>
+      {sub && <div className="mono-xs" style={{ marginTop: 6, color: 'var(--muted)' }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ─── LATENCY HISTOGRAM ───────────────────────────────────────────────────────
+function LatencyHistogram({ data, p50, p95, p99 }) {
+  if (!data || data.length === 0) return null;
+  const W = 460, H = 180, P = 8;
+  const max = Math.max(...data.map(d => d.v));
+  const xMin = data[0].x, xMax = data[data.length - 1].x;
+  const xScale = x => P + (x - xMin) / (xMax - xMin) * (W - 2 * P);
+  const yScale = v => H - P - (v / max) * (H - 2 * P);
+  const bw = (W - 2 * P) / data.length - 2;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 24}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+      <line x1={P} x2={W - P} y1={H - P} y2={H - P} stroke="var(--line-2)" />
+      {data.map((d, i) => (
+        <rect key={i}
+          x={P + i * ((W - 2 * P) / data.length)}
+          y={yScale(d.v)}
+          width={bw}
+          height={H - P - yScale(d.v)}
+          fill="var(--ember)"
+          opacity={0.8}
+        />
+      ))}
+      {[['p50', p50, 'var(--text)'], ['p95', p95, 'var(--ember)'], ['p99', p99, 'var(--ember)']].map(([k, v, c]) => (
+        <g key={k}>
+          <line x1={xScale(v)} x2={xScale(v)} y1={P} y2={H - P} stroke={c} strokeDasharray={k === 'p50' ? '0' : '2 3'} strokeWidth={k === 'p50' ? 1.2 : 1} />
+          <text x={xScale(v) + 4} y={P + 10} fill={c} fontFamily="var(--mono)" fontSize="9">{k.toUpperCase()} {v}</text>
+        </g>
+      ))}
+      <text x={P} y={H + 16} fill="var(--muted)" fontFamily="var(--mono)" fontSize="9.5">{xMin}ms</text>
+      <text x={W - P} y={H + 16} fill="var(--muted)" fontFamily="var(--mono)" fontSize="9.5" textAnchor="end">{xMax}ms</text>
+    </svg>
+  );
+}
+
+// ─── MEMORY TIMELINE ─────────────────────────────────────────────────────────
+function MemoryTimeline({ data, peak, unified }) {
+  if (!data || data.length < 2) return null;
+  const W = 360, H = 180, P = 10;
+  const max = unified;
+  const xs = data.map((_, i) => P + i / (data.length - 1) * (W - 2 * P));
+  const ys = data.map(v => H - P - (v / max) * (H - 2 * P));
+  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
+  const area = `${path} L ${W - P} ${H - P} L ${P} ${H - P} Z`;
+  const peakY = H - P - (peak / max) * (H - 2 * P);
+  const unifiedGB = (unified / 1024).toFixed(0);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+      <defs>
+        <linearGradient id="memGrad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"   stopColor="var(--ink)" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="var(--ink)" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map(g => (
+        <line key={g} x1={P} x2={W - P} y1={H - P - g * (H - 2 * P)} y2={H - P - g * (H - 2 * P)} stroke="var(--line)" strokeDasharray="1 3" />
+      ))}
+      <text x={W - P} y={P + 9} fill="var(--dim)" fontFamily="var(--mono)" fontSize="9" textAnchor="end">{unifiedGB} GB unified ceiling</text>
+      <path d={area} fill="url(#memGrad)" />
+      <path d={path} stroke="var(--ink)" strokeWidth="1.4" fill="none" />
+      <line x1={P} x2={W - P} y1={peakY} y2={peakY} stroke="var(--ember)" strokeDasharray="2 3" />
+      <text x={P + 4} y={peakY - 4} fill="var(--ember)" fontFamily="var(--mono)" fontSize="9">peak {(peak / 1024).toFixed(2)} GB</text>
+    </svg>
+  );
+}
+
+// ─── QUALITY RADAR + PROMPT BREAKDOWN ────────────────────────────────────────
+function QualitySection({ models, selected }) {
+  const m = models.find(x => x.id === selected) || models[0];
+  if (!m) return null;
+  return (
+    <section style={{ borderBottom: '1px solid var(--line)' }}>
+      <SectionHead num="03" title="Quality matrix" caption="By prompt set · scored 0–100" />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1.6fr',
+        borderTop: '1px solid var(--line)',
+      }}>
+        <div style={{ padding: 32, borderRight: '1px solid var(--line)' }}>
+          <div className="mono-xs" style={{ marginBottom: 18 }}>Spotlight · {m.id}</div>
+          <QualityRadar q={m.qual} />
+          <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+            {Object.entries(m.qual).map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: 6 }}>
+                <span className="mono-xs">{k}</span>
+                <span className="mono-num" style={{ color: 'var(--violet)' }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ padding: 32 }}>
+          <div className="mono-xs" style={{ marginBottom: 18 }}>All models · ranked per set</div>
+          <QualityHeatmap models={models} selected={selected} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function QualityRadar({ q }) {
+  const W = 320, H = 320, cx = W / 2, cy = H / 2, r = 110;
+  const cats = Object.entries(q);
+  const angle = (i) => (-Math.PI / 2) + (i / cats.length) * Math.PI * 2;
+  const point = (i, val) => {
+    const rr = (val / 100) * r;
+    return [cx + Math.cos(angle(i)) * rr, cy + Math.sin(angle(i)) * rr];
+  };
+  const path = cats.map(([_, v], i) => {
+    const [x, y] = point(i, v);
+    return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(' ') + ' Z';
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {[25, 50, 75, 100].map(g => (
+        <polygon key={g}
+          points={cats.map((_, i) => {
+            const [x, y] = point(i, g);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+          }).join(' ')}
+          fill="none"
+          stroke="var(--line)"
+          strokeDasharray={g === 100 ? '0' : '1 3'}
+        />
+      ))}
+      {cats.map(([k], i) => {
+        const [x, y] = point(i, 100);
+        return <line key={k} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--line)" />;
+      })}
+      <path d={path} fill="color-mix(in oklab, var(--violet), transparent 75%)" stroke="var(--violet)" strokeWidth="1.4" />
+      {cats.map(([k, v], i) => {
+        const [x, y] = point(i, v);
+        return <circle key={k} cx={x} cy={y} r="3" fill="var(--violet)" />;
+      })}
+      {cats.map(([k, v], i) => {
+        const [x, y] = point(i, 118);
+        return (
+          <g key={k}>
+            <text x={x} y={y - 4} fill="var(--text)" fontFamily="var(--mono)" fontSize="10" textAnchor="middle">{k.toUpperCase()}</text>
+            <text x={x} y={y + 8} fill="var(--muted)" fontFamily="var(--mono)" fontSize="9.5" textAnchor="middle">{v}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function QualityHeatmap({ models, selected }) {
+  const cats = ['coding', 'reasoning', 'math', 'general'];
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1.6fr repeat(4, 1fr) 0.8fr', gap: 0 }}>
+      <span className="mono-xs">Model</span>
+      {cats.map(c => <span key={c} className="mono-xs" style={{ textAlign: 'center' }}>{c}</span>)}
+      <span className="mono-xs" style={{ textAlign: 'right' }}>avg</span>
+
+      {models.map(m => {
+        const isSel = m.id === selected;
+        const avg = (m.qual.coding + m.qual.reasoning + m.qual.math + m.qual.general) / 4;
+        return (
+          <React.Fragment key={m.id}>
+            <div style={{ padding: '14px 0 14px 0', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                width: 4, height: 14, background: isSel ? 'var(--citron)' : 'transparent',
+              }} />
+              <span style={{ fontSize: 13, color: isSel ? 'var(--text)' : 'var(--muted)' }}>{m.id}</span>
+            </div>
+            {cats.map(c => {
+              const v = m.qual[c];
+              return (
+                <div key={c} style={{
+                  borderTop: '1px solid var(--line)',
+                  padding: '14px 6px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: `color-mix(in oklab, var(--violet), transparent ${100 - v * 0.7}%)`,
+                  color: v > 70 ? 'var(--bg)' : 'var(--text)',
+                  fontFamily: 'var(--mono)', fontVariantNumeric: 'tabular-nums',
+                  fontSize: 13,
+                }}>{v}</div>
+              );
+            })}
+            <div style={{ borderTop: '1px solid var(--line)', padding: '14px 0', textAlign: 'right' }}>
+              <span className="mono-num" style={{ color: 'var(--violet)' }}>{avg.toFixed(0)}</span>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── PROMPT SET BREAKDOWN ────────────────────────────────────────────────────
+function PromptBreakdown({ model }) {
+  return (
+    <section style={{ borderBottom: '1px solid var(--line)' }}>
+      <SectionHead num="04" title="Prompt sets" caption={`${model.id} · breakdown by category`} />
+      <div style={{ borderTop: '1px solid var(--line)', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        {PROMPT_BREAKDOWN.map((p, i) => (
+          <div key={p.set} style={{
+            padding: 32,
+            borderRight: i < 3 ? '1px solid var(--line)' : 'none',
+            display: 'flex', flexDirection: 'column', gap: 18,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="serif" style={{ fontSize: 24 }}>{p.set}</span>
+              <span className="mono-xs">n = {p.n}</span>
+            </div>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span className="mono-xs">score</span>
+                <span className="mono-num" style={{ color: 'var(--violet)' }}>{p.score}<span style={{ color: 'var(--dim)' }}>/100</span></span>
+              </div>
+              <Bar value={p.score} max={100} color="var(--violet)" height={3} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span className="mono-xs">throughput</span>
+                <span className="mono-num" style={{ color: 'var(--citron)' }}>{p.tok_s.toFixed(1)} <span style={{ color: 'var(--muted)' }}>tok/s</span></span>
+              </div>
+              <Bar value={p.tok_s} max={Math.max(...PROMPT_BREAKDOWN.map(x => x.tok_s), 50)} color="var(--citron)" height={3} />
+            </div>
+            <div className="mono-xs" style={{ color: 'var(--muted)', borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+              prompts/{p.set}.jsonl
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── RUN HISTORY ─────────────────────────────────────────────────────────────
+function Sparkline({ data, color = 'var(--text)' }) {
+  const W = 80, H = 22;
+  const min = Math.min(...data), max = Math.max(...data);
+  const x = i => (i / (data.length - 1)) * W;
+  const y = v => H - ((v - min) / (max - min || 1)) * (H - 2) - 1;
+  const path = data.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: W, height: H, display: 'block' }}>
+      <path d={path} fill="none" stroke={color} strokeWidth="1.2" />
+      <circle cx={x(data.length - 1)} cy={y(data[data.length - 1])} r="1.6" fill={color} />
+    </svg>
+  );
+}
+
+function RunHistory() {
+  const series = RUN_HISTORY.map((r, idx) => {
+    const arr = [];
+    let v = r.avg_tok || 30;
+    for (let i = 0; i < 14; i++) { v += (Math.sin(i * 0.7 + idx) * 2.4); arr.push(Math.max(0.1, v)); }
+    return arr;
+  });
+  return (
+    <section style={{ borderBottom: '1px solid var(--line)' }}>
+      <SectionHead num="05" title="Run history" caption={`Last ${RUN_HISTORY.length} stored benchmark${RUN_HISTORY.length !== 1 ? 's' : ''} · llm-bench results`} right={
+        <span className="mono-xs">sqlite · ~/.llm-bench/results.db</span>
+      } />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1.4fr 0.7fr 0.7fr 1.1fr 1.4fr 1.4fr 1.2fr 0.6fr',
+        padding: '14px 32px',
+        borderTop: '1px solid var(--line)',
+        borderBottom: '1px solid var(--line)',
+      }}>
+        {['Run', 'Date', 'Models', 'Duration', 'Avg throughput', 'Trend', 'Top model', ''].map(h => (
+          <span key={h} className="mono-xs">{h}</span>
+        ))}
+      </div>
+      {RUN_HISTORY.length === 0 ? (
+        <div style={{ padding: '32px', color: 'var(--dim)' }} className="mono-xs">No stored runs. Run a benchmark first.</div>
+      ) : RUN_HISTORY.map((r, i) => {
+        const isCurrent = r.tag === 'current';
+        return (
+          <div key={r.id} style={{
+            display: 'grid',
+            gridTemplateColumns: '1.4fr 0.7fr 0.7fr 1.1fr 1.4fr 1.4fr 1.2fr 0.6fr',
+            padding: '18px 32px',
+            borderBottom: '1px solid var(--line)',
+            alignItems: 'center',
+            background: isCurrent ? 'color-mix(in oklab, var(--citron), transparent 96%)' : 'transparent',
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {isCurrent ? <span className="live-dot" /> : <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--dim)' }} />}
+              <span className="mono-num" style={{ fontSize: 12, color: isCurrent ? 'var(--text)' : 'var(--muted)' }}>{r.id}</span>
+            </span>
+            <span style={{ fontSize: 13 }}>{r.date}</span>
+            <span className="mono-num" style={{ fontSize: 13 }}>{r.models}</span>
+            <span className="mono-num" style={{ fontSize: 13, color: 'var(--muted)' }}>{r.dur}</span>
+            <span className="mono-num" style={{ fontSize: 14, color: 'var(--citron)' }}>
+              {(r.avg_tok || 0).toFixed(1)}<span className="mono-xs" style={{ color: 'var(--muted)', marginLeft: 4 }}>tok/s</span>
+            </span>
+            <Sparkline data={series[i]} color={isCurrent ? 'var(--citron)' : 'var(--ink)'} />
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{r.top}</span>
+            <span className="mono-xs" style={{ textAlign: 'right', color: isCurrent ? 'var(--citron)' : 'var(--dim)' }}>
+              {isCurrent ? 'now' : '↗'}
+            </span>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+// ─── SYSTEM TELEMETRY ────────────────────────────────────────────────────────
+function Telemetry() {
+  const cpuTrace = useMemo(() => Array.from({ length: 60 }, (_, i) => 24 + Math.sin(i * 0.32) * 8 + Math.random() * 6), []);
+  const gpuTrace = useMemo(() => Array.from({ length: 60 }, (_, i) => 72 + Math.sin(i * 0.18 + 1) * 12 + Math.random() * 4), []);
+  const pwrTrace = useMemo(() => Array.from({ length: 60 }, (_, i) => 14 + Math.sin(i * 0.22 + 2) * 4 + Math.random() * 1.2), []);
+
+  return (
+    <section style={{ borderBottom: '1px solid var(--line)' }}>
+      <SectionHead num="06" title="System telemetry" caption={`${HARDWARE.chip} · sampled via ioreg`} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: '1px solid var(--line)' }}>
+        <TelemetryCell label="CPU usage"    value="—"   unit="% · P-cores" trace={cpuTrace} max={100} accent="var(--ink)"   sub={HARDWARE.cores} />
+        <TelemetryCell label="GPU / Metal"  value="—"   unit="% · sustained" trace={gpuTrace} max={100} accent="var(--citron)" sub="polled via ioreg" />
+        <TelemetryCell label="Package power" value="—"  unit="W"           trace={pwrTrace} max={28}  accent="var(--ember)"  sub="approximate" />
+        <div style={{ padding: 32 }}>
+          <div className="mono-xs" style={{ marginBottom: 12 }}>Unified memory</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span className="serif" style={{ fontSize: 44, lineHeight: 0.95, color: 'var(--ink)' }}>{HARDWARE.unified}</span>
+          </div>
+          <div className="mono-xs" style={{ marginTop: 8, color: 'var(--muted)' }}>{HARDWARE.chip}</div>
+          <div className="mono-xs" style={{ marginTop: 8, color: 'var(--muted)' }}>{HARDWARE.os}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TelemetryCell({ label, value, unit, trace, max, accent, sub }) {
+  const W = 220, H = 56;
+  const x = i => (i / (trace.length - 1)) * W;
+  const y = v => H - (v / max) * H;
+  const path = trace.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const area = `${path} L ${W} ${H} L 0 ${H} Z`;
+  return (
+    <div style={{ padding: 32, borderRight: '1px solid var(--line)' }}>
+      <div className="mono-xs" style={{ marginBottom: 12 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span className="serif mono-num" style={{ fontSize: 44, lineHeight: 0.95, color: accent }}>{value}</span>
+        <span className="mono-xs">{unit}</span>
+      </div>
+      <div className="mono-xs" style={{ marginTop: 8, color: 'var(--muted)' }}>{sub}</div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 56, marginTop: 18, display: 'block' }} preserveAspectRatio="none">
+        <path d={area} fill={accent} opacity="0.12" />
+        <path d={path} fill="none" stroke={accent} strokeWidth="1.2" />
+      </svg>
+    </div>
+  );
+}
+
+// ─── COMMAND BAR (footer) ────────────────────────────────────────────────────
+function CommandBar({ view }) {
+  const modelIds = MODELS.map(m => m.id).join(' ');
+  const cmd = {
+    overview: `llm-bench compare ${modelIds}`,
+    runs:     'llm-bench results --last 10',
+    compare:  `llm-bench compare ${MODELS.slice(0, 3).map(m => m.id).join(' ')} --output table`,
+    prompts:  'llm-bench list --prompts',
+    settings: 'llm-bench system',
+  }[view] || '';
+
+  return (
+    <footer style={{
+      padding: '20px 32px',
+      borderTop: '1px solid var(--line)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 24,
+      background: 'var(--surface)',
+    }}>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'center', minWidth: 0 }}>
+        <span className="mono-xs" style={{ color: 'var(--citron)' }}>$</span>
+        <code style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {cmd}
+        </code>
+      </div>
+      <div style={{ display: 'flex', gap: 24, flexShrink: 0 }}>
+        <span className="mono-xs">{HARDWARE.os}</span>
+        <span className="mono-xs">storage · sqlite</span>
+        <span className="mono-xs" style={{ color: 'var(--citron)' }}>● {MODELS.length} models</span>
+      </div>
+    </footer>
+  );
+}
+
+// ─── RUNS VIEW (full) ────────────────────────────────────────────────────────
+function RunsView() {
+  const [selected, setSelected] = useState(RUN_HISTORY[0] ? RUN_HISTORY[0].id : null);
+  const sel = RUN_HISTORY.find(r => r.id === selected) || RUN_HISTORY[0];
+  const daySpan = RUN_HISTORY.length > 1 ? (() => {
+    try {
+      const dates = RUN_HISTORY.map(r => new Date(r.id)).filter(d => !isNaN(d));
+      if (dates.length < 2) return '?';
+      return Math.round((Math.max(...dates) - Math.min(...dates)) / 86400000);
+    } catch(e) { return '?'; }
+  })() : 0;
+  return (
+    <section>
+      <div style={{ padding: '56px 32px 32px', borderBottom: '1px solid var(--line)' }}>
+        <div className="mono-xs" style={{ marginBottom: 18, display: 'flex', gap: 12 }}>
+          <Crosshair /> <span>Run history · sqlite</span>
+        </div>
+        <h1 className="serif" style={{ fontSize: 64, lineHeight: 0.96, letterSpacing: '-0.02em', fontWeight: 400, maxWidth: 880 }}>
+          {RUN_HISTORY.length} run{RUN_HISTORY.length !== 1 ? 's' : ''} <span className="serif-i">stored</span>{daySpan > 0 ? ` across the last ${daySpan} days.` : '.'}
+        </h1>
+        <p className="serif" style={{ fontSize: 17, color: 'var(--muted)', marginTop: 18, maxWidth: 600 }}>
+          Persisted to <code style={{ fontFamily: 'var(--mono)' }}>~/.llm-bench/results.db</code>. Re-queryable via
+          <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)' }}> llm-bench results</code>.
+        </p>
+      </div>
+      <RunHistory />
+      {sel && (
+        <section style={{ borderBottom: '1px solid var(--line)' }}>
+          <SectionHead num="" title="Run inspector" caption={sel.id} right={
+            <div style={{ display: 'flex', gap: 8 }}>
+              {RUN_HISTORY.slice(0, 4).map(r => (
+                <button key={r.id} onClick={() => setSelected(r.id)} className="mono-xs" style={chipStyle(r.id === selected)}>{r.date}</button>
+              ))}
+            </div>
+          } />
+          <div style={{ borderTop: '1px solid var(--line)', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            <Kpi2 label="Models benchmarked" value={sel.models} unit="models"   accent="var(--text)" />
+            <Kpi2 label="Total wall time"    value={sel.dur}    unit=""         accent="var(--ember)" />
+            <Kpi2 label="Average throughput" value={(sel.avg_tok || 0).toFixed(1)} unit="tok/s · mean" accent="var(--citron)" />
+            <Kpi2 label="Top performer"      value={sel.top}    unit="by speed" accent="var(--violet)" small />
+          </div>
+        </section>
+      )}
+    </section>
+  );
+}
+
+function Kpi2({ label, value, unit, accent, small }) {
+  return (
+    <div style={{ padding: 32, borderRight: '1px solid var(--line)' }}>
+      <div className="mono-xs" style={{ marginBottom: 12 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span className="serif mono-num" style={{ fontSize: small ? 28 : 44, lineHeight: 0.95, color: accent }}>{value}</span>
+        <span className="mono-xs">{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── COMPARE VIEW ────────────────────────────────────────────────────────────
+function CompareView() {
+  const defaultPicks = MODELS.slice(0, Math.min(3, MODELS.length)).map(m => m.id);
+  const [picks, setPicks] = useState(defaultPicks);
+  const togglePick = (id) => {
+    setPicks(p => p.includes(id) ? p.filter(x => x !== id) : (p.length < 4 ? [...p, id] : p));
+  };
+  const selected = picks.map(id => MODELS.find(m => m.id === id)).filter(Boolean);
+
+  const maxTok = Math.max(...MODELS.map(m => m.tok_s), 1);
+  const maxTtft = Math.max(...MODELS.map(m => m.ttft_p99), 1);
+  const maxMem = Math.max(...MODELS.map(m => m.rss), 1);
+
+  return (
+    <section>
+      <div style={{ padding: '56px 32px 32px', borderBottom: '1px solid var(--line)' }}>
+        <div className="mono-xs" style={{ marginBottom: 18, display: 'flex', gap: 12 }}>
+          <Crosshair /> <span>Head-to-head</span>
+        </div>
+        <h1 className="serif" style={{ fontSize: 64, lineHeight: 0.96, letterSpacing: '-0.02em', fontWeight: 400, maxWidth: 880 }}>
+          Pick up to four models. <span className="serif-i">Read the trade-offs.</span>
+        </h1>
+        <div style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {MODELS.map(m => {
+            const on = picks.includes(m.id);
+            return (
+              <button key={m.id} onClick={() => togglePick(m.id)} className="mono-xs" style={{
+                padding: '8px 14px',
+                border: `1px solid ${on ? 'var(--text)' : 'var(--line-2)'}`,
+                background: on ? 'var(--text)' : 'transparent',
+                color: on ? 'var(--bg)' : 'var(--muted)',
+                cursor: 'pointer',
+              }}>
+                {m.id}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {selected.length === 0 ? (
+        <div style={{ padding: 80, textAlign: 'center' }} className="mono-xs">Select a model above to begin.</div>
+      ) : (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${selected.length}, 1fr)`,
+          borderBottom: '1px solid var(--line)',
+        }}>
+          {selected.map(m => {
+            const score = (m.qual.coding + m.qual.reasoning + m.qual.math + m.qual.general) / 4;
+            return (
+              <div key={m.id} style={{ borderRight: '1px solid var(--line)', padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div>
+                  <div className="mono-xs" style={{ marginBottom: 6, color: 'var(--muted)' }}>{m.backend} · {m.quant}</div>
+                  <div className="serif" style={{ fontSize: 26 }}>{m.id}</div>
+                  <div className="mono-xs" style={{ marginTop: 4 }}>{m.fam} · {m.params}</div>
+                </div>
+                <CompareStat label="Throughput" value={m.tok_s.toFixed(1)} unit="tok/s" accent="var(--citron)" pct={m.tok_s / maxTok} />
+                {m.ttft_p50 ? <CompareStat label="TTFT p50" value={m.ttft_p50} unit="ms" accent="var(--ember)" pct={m.ttft_p50 / maxTtft} invert /> : null}
+                {m.ttft_p95 ? <CompareStat label="TTFT p95" value={m.ttft_p95} unit="ms" accent="var(--ember)" pct={m.ttft_p95 / maxTtft} invert /> : null}
+                {m.rss ? <CompareStat label="Peak RSS" value={(m.rss/1024).toFixed(2)} unit="GB" accent="var(--ink)" pct={m.rss / maxMem} invert /> : null}
+                <CompareStat label="Quality"    value={score.toFixed(0)}  unit="/100"  accent="var(--violet)" pct={score / 100} />
+                <div>
+                  <div className="mono-xs" style={{ marginBottom: 8 }}>Quality by set</div>
+                  {Object.entries(m.qual).map(([k, v]) => (
+                    <div key={k} style={{ marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span className="mono-xs">{k}</span>
+                        <span className="mono-num" style={{ fontSize: 12, color: 'var(--violet)' }}>{v}</span>
+                      </div>
+                      <Bar value={v} max={100} color="var(--violet)" height={2} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CompareStat({ label, value, unit, accent, pct, invert }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+        <span className="mono-xs">{label}</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span className="serif mono-num" style={{ fontSize: 28, lineHeight: 1, color: accent }}>{value}</span>
+          <span className="mono-xs">{unit}</span>
+        </div>
+      </div>
+      <div style={{ height: 3, background: 'var(--line)', position: 'relative' }}>
+        <div style={{
+          position: 'absolute', left: invert ? 'auto' : 0, right: invert ? 0 : 'auto',
+          width: `${Math.min(100, (pct || 0) * 100)}%`, height: '100%', background: accent,
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── PROMPTS VIEW ────────────────────────────────────────────────────────────
+const PROMPT_SAMPLES = {
+  coding: [
+    { id: 'C-01', prompt: 'Write a Python function that returns the nth Fibonacci number using memoization.', tokens: 22 },
+    { id: 'C-02', prompt: 'Implement a binary search tree in Rust with insert, find, and delete.', tokens: 19 },
+    { id: 'C-03', prompt: 'Refactor this nested for-loop into a list comprehension.', tokens: 14 },
+  ],
+  reasoning: [
+    { id: 'R-01', prompt: 'Three boxes contain apples, oranges, or both, and all labels are wrong. Which one do you open?', tokens: 28 },
+    { id: 'R-02', prompt: 'A bat and a ball cost $1.10. The bat costs $1 more than the ball. How much is the ball?', tokens: 26 },
+    { id: 'R-03', prompt: 'If yesterday is Friday, what day will it be in 100 days?', tokens: 16 },
+  ],
+  math: [
+    { id: 'M-01', prompt: 'Solve for x: 3x² − 12x + 9 = 0.', tokens: 12 },
+    { id: 'M-02', prompt: 'A train travels 60 mph for 2.5 hours, then 80 mph for 1.5 hours. Average speed?', tokens: 22 },
+    { id: 'M-03', prompt: 'Compute the integral of sin(x)cos(x) dx.', tokens: 11 },
+  ],
+  general: [
+    { id: 'G-01', prompt: 'Summarize the plot of Crime and Punishment in three sentences.', tokens: 16 },
+    { id: 'G-02', prompt: 'Explain the second law of thermodynamics in plain language.', tokens: 13 },
+    { id: 'G-03', prompt: 'What is the difference between weather and climate?', tokens: 11 },
+  ],
+};
+
+function PromptsView() {
+  const [active, setActive] = useState('coding');
+  const samples = PROMPT_SAMPLES[active] || [];
+  return (
+    <section>
+      <div style={{ padding: '56px 32px 32px', borderBottom: '1px solid var(--line)' }}>
+        <div className="mono-xs" style={{ marginBottom: 18, display: 'flex', gap: 12 }}>
+          <Crosshair /> <span>Prompt sets · prompts/*.jsonl</span>
+        </div>
+        <h1 className="serif" style={{ fontSize: 64, lineHeight: 0.96, letterSpacing: '-0.02em', fontWeight: 400 }}>
+          Four sets, <span className="serif-i">eighty prompts.</span>
+        </h1>
+        <p className="serif" style={{ fontSize: 17, color: 'var(--muted)', marginTop: 18, maxWidth: 600 }}>
+          Each model answers the same prompts. Outputs are scored 0–100 by a deterministic rubric in
+          <code style={{ fontFamily: 'var(--mono)', color: 'var(--text)' }}> llm_benchmark/benchmarks/quality.py</code>.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid var(--line)' }}>
+        {PROMPT_BREAKDOWN.map(p => {
+          const on = active === p.set;
+          return (
+            <button key={p.set} onClick={() => setActive(p.set)} style={{
+              padding: 32,
+              borderRight: '1px solid var(--line)',
+              background: on ? 'var(--surface)' : 'transparent',
+              borderBottom: on ? '2px solid var(--citron)' : '2px solid transparent',
+              textAlign: 'left',
+              cursor: 'pointer',
+              color: 'inherit',
+            }}>
+              <div className="mono-xs" style={{ color: on ? 'var(--citron)' : 'var(--muted)' }}>{p.n} prompts</div>
+              <div className="serif" style={{ fontSize: 36, marginTop: 8 }}>{p.set}</div>
+              <div className="mono-xs" style={{ marginTop: 12, color: 'var(--muted)' }}>
+                avg score <span style={{ color: 'var(--violet)' }}>{p.score}</span> · {p.tok_s.toFixed(1)} tok/s
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div>
+        <SectionHead num="" title={<>Sampled prompts <span className="serif-i" style={{ color: 'var(--muted)' }}>· {active}</span></>} caption={`prompts/${active}.jsonl`} />
+        <div style={{ borderTop: '1px solid var(--line)' }}>
+          {samples.map(s => (
+            <div key={s.id} style={{
+              display: 'grid',
+              gridTemplateColumns: '80px 1fr 100px',
+              padding: '22px 32px',
+              borderBottom: '1px solid var(--line)',
+              alignItems: 'center',
+              gap: 24,
+            }}>
+              <span className="mono-xs" style={{ color: 'var(--muted)' }}>{s.id}</span>
+              <span className="serif" style={{ fontSize: 18 }}>{s.prompt}</span>
+              <span className="mono-xs" style={{ textAlign: 'right' }}>{s.tokens} tok</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── SETTINGS VIEW ───────────────────────────────────────────────────────────
+function SettingsView() {
+  return (
+    <section>
+      <div style={{ padding: '56px 32px 32px', borderBottom: '1px solid var(--line)' }}>
+        <div className="mono-xs" style={{ marginBottom: 18, display: 'flex', gap: 12 }}>
+          <Crosshair /> <span>Configuration · ~/.llm-bench/config.toml</span>
+        </div>
+        <h1 className="serif" style={{ fontSize: 64, lineHeight: 0.96, letterSpacing: '-0.02em', fontWeight: 400 }}>
+          Settings <span className="serif-i">&amp; backends.</span>
+        </h1>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ padding: 32, borderRight: '1px solid var(--line)' }}>
+          <div className="mono-xs" style={{ marginBottom: 18 }}>Hardware</div>
+          {[
+            ['Chip',    HARDWARE.chip],
+            ['Cores',   HARDWARE.cores],
+            ['Memory',  HARDWARE.unified],
+            ['OS',      HARDWARE.os],
+          ].map(([k, v]) => (
+            <div key={k} style={{ padding: '14px 0', borderTop: '1px solid var(--line)', display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
+              <div style={{ fontSize: 13 }}>{k}</div>
+              <code style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--citron)', border: '1px solid var(--line-2)', padding: '4px 10px' }}>{v}</code>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: 32 }}>
+          <div className="mono-xs" style={{ marginBottom: 18 }}>Default run parameters</div>
+          {[
+            ['runs',         '3',       'repetitions per benchmark'],
+            ['warmup',       '1',       'discarded before stats'],
+            ['max-tokens',   '256',     'per generation'],
+            ['prompt-set',   RUN.promptSet || 'general', 'default JSONL'],
+            ['skip-quality', 'false',   'speed-only mode'],
+          ].map(([k, v, sub]) => (
+            <div key={k} style={{ padding: '14px 0', borderTop: '1px solid var(--line)', display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, fontFamily: 'var(--mono)' }}>{k}</div>
+                <div className="mono-xs" style={{ marginTop: 2, color: 'var(--muted)' }}>{sub}</div>
+              </div>
+              <code style={{
+                fontFamily: 'var(--mono)', fontSize: 12,
+                color: 'var(--citron)',
+                border: '1px solid var(--line-2)', padding: '4px 10px', alignSelf: 'center',
+              }}>{v}</code>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: 32, borderBottom: '1px solid var(--line)' }}>
+        <div className="mono-xs" style={{ marginBottom: 12 }}>Storage</div>
+        <div className="serif" style={{ fontSize: 24 }}>{RUN_HISTORY.length} run{RUN_HISTORY.length !== 1 ? 's' : ''} stored</div>
+        <div className="mono-xs" style={{ marginTop: 8, color: 'var(--muted)' }}>~/.llm-bench/results.db · sqlite</div>
+      </div>
+    </section>
+  );
+}
+
+// ─── ROOT ────────────────────────────────────────────────────────────────────
+function App() {
+  const [view, setView] = useState('overview');
+  const [selected, setSelected] = useState(SPOTLIGHT_ID || (MODELS[0] && MODELS[0].id));
+  const [rankBy, setRankBy] = useState('tok_s');
+
+  const spotlight = MODELS.find(m => m.id === selected) || MODELS[0];
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      <Header view={view} setView={setView} />
+
+      {view === 'overview' && (
+        <>
+          {MODELS.length > 0 ? <HeroLede models={MODELS} /> : (
+            <div style={{ padding: '80px 32px', color: 'var(--dim)' }} className="mono-xs">
+              No benchmark data. Run: <code style={{ color: 'var(--citron)' }}>llm-bench run &lt;model&gt;</code>
+            </div>
+          )}
+          {MODELS.length > 0 && <Leaderboard models={MODELS} rankBy={rankBy} selected={selected} onSelect={setSelected} />}
+          {spotlight && <Spotlight model={spotlight} />}
+          {MODELS.length > 0 && <QualitySection models={MODELS} selected={selected} />}
+          {spotlight && <PromptBreakdown model={spotlight} />}
+          <RunHistory />
+          <Telemetry />
+        </>
+      )}
+      {view === 'runs' && <RunsView />}
+      {view === 'compare' && <CompareView />}
+      {view === 'prompts' && <PromptsView />}
+      {view === 'settings' && <SettingsView />}
+
+      <CommandBar view={view} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>

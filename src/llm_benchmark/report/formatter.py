@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
 from ..metrics.types import BenchmarkResult
 
@@ -44,7 +43,7 @@ def _print_quality_tasks(tasks: list[dict]) -> None:
         if score >= 1.0:
             score_str = "[green]PASS[/]"
         elif score > 0:
-            score_str = f"[yellow]{score*100:.0f}%[/]"
+            score_str = f"[yellow]{score * 100:.0f}%[/]"
         else:
             score_str = "[red]FAIL[/]"
         t.add_row(
@@ -98,7 +97,7 @@ def print_result(result: BenchmarkResult, verbose: bool = False) -> None:
 
     elif result.benchmark_type == "quality":
         t.add_row("Overall Score", _fmt((result.quality_score or 0) * 100, 1, "%"))
-        per_cat = (result.quality_details.get("per_category") or {})
+        per_cat = result.quality_details.get("per_category") or {}
         for cat, score in sorted(per_cat.items()):
             t.add_row(f"  {cat}", _fmt(score * 100, 1, "%"))
         t.add_row("Tasks Run", str(result.runs))
@@ -119,15 +118,15 @@ def print_comparison_table(results: list[BenchmarkResult]) -> None:
         return
 
     bench_type = results[0].benchmark_type
-    console.print(f"\n[bold]Side-by-side — {bench_type.upper()}[/]  "
-                  f"[dim]({len(results)} model(s))[/]\n")
+    console.print(
+        f"\n[bold]Side-by-side — {bench_type.upper()}[/]  [dim]({len(results)} model(s))[/]\n"
+    )
 
     t = Table(box=box.MARKDOWN, show_header=True, header_style="bold cyan")
     t.add_column("Model")
     t.add_column("Backend")
 
     if bench_type == "speed":
-        cols = ["Mean TPS", "Std", "Min", "Max", "Peak RSS", "Peak Metal"]
         t.add_column("Mean TPS", justify="right")
         t.add_column("Std", justify="right")
         t.add_column("Min", justify="right")
@@ -142,7 +141,8 @@ def print_comparison_table(results: list[BenchmarkResult]) -> None:
 
         for i, r in enumerate(results):
             t.add_row(
-                r.model, r.backend,
+                r.model,
+                r.backend,
                 _highlight(_fmt(r.mean_tps, 1), i == best_tps),
                 _fmt(r.std_tps, 2),
                 _fmt(r.min_tps, 1),
@@ -163,7 +163,8 @@ def print_comparison_table(results: list[BenchmarkResult]) -> None:
         for i, r in enumerate(results):
             lat = r.latency
             t.add_row(
-                r.model, r.backend,
+                r.model,
+                r.backend,
                 _highlight(_fmt(lat.p50_ms if lat else None, 0, " ms"), i == best_p50),
                 _fmt(lat.p95_ms if lat else None, 0, " ms"),
                 _fmt(lat.p99_ms if lat else None, 0, " ms"),
@@ -180,7 +181,8 @@ def print_comparison_table(results: list[BenchmarkResult]) -> None:
 
         for i, r in enumerate(results):
             t.add_row(
-                r.model, r.backend,
+                r.model,
+                r.backend,
                 _fmt(r.mean_rss_mb, 0, " MB"),
                 _highlight(_fmt(r.peak_rss_mb, 0, " MB"), i == best_rss),
                 _fmt(r.peak_metal_mb, 0, " MB") if r.peak_metal_mb else "-",
@@ -196,7 +198,8 @@ def print_comparison_table(results: list[BenchmarkResult]) -> None:
 
         for i, r in enumerate(results):
             t.add_row(
-                r.model, r.backend,
+                r.model,
+                r.backend,
                 _highlight(_fmt((r.quality_score or 0) * 100, 1, "%"), i == best_score),
                 str(r.runs),
                 r.prompt_set,

@@ -4,24 +4,22 @@ from __future__ import annotations
 
 import json
 import time
-from pathlib import Path
-from typing import Iterator
-from unittest.mock import MagicMock
+from collections.abc import Iterator
 
 import pytest
 
 from llm_benchmark.backends.base import BaseBackend, StreamChunk
-from llm_benchmark.benchmarks.speed import SpeedBenchmark
 from llm_benchmark.benchmarks.latency import LatencyBenchmark
 from llm_benchmark.benchmarks.memory import MemoryBenchmark
-from llm_benchmark.benchmarks.quality import QualityBenchmark, _score_mcq, _score_keywords
+from llm_benchmark.benchmarks.quality import QualityBenchmark, _score_keywords, _score_mcq
+from llm_benchmark.benchmarks.speed import SpeedBenchmark
 from llm_benchmark.config import Config
 from llm_benchmark.metrics.types import BenchmarkResult
-
 
 # ---------------------------------------------------------------------------
 # Fake backend
 # ---------------------------------------------------------------------------
+
 
 class FakeBackend(BaseBackend):
     name = "fake"
@@ -57,6 +55,7 @@ class FakeBackend(BaseBackend):
 # SpeedBenchmark
 # ---------------------------------------------------------------------------
 
+
 class TestSpeedBenchmark:
     def test_returns_benchmark_result(self, tmp_path):
         cfg = Config()
@@ -82,13 +81,20 @@ class TestSpeedBenchmark:
     def test_progress_callback(self):
         calls = []
         bench = SpeedBenchmark()
-        bench.run(FakeBackend(), "fake-model", runs=2, warmup=1, on_progress=lambda c, t: calls.append((c, t)))
+        bench.run(
+            FakeBackend(),
+            "fake-model",
+            runs=2,
+            warmup=1,
+            on_progress=lambda c, t: calls.append((c, t)),
+        )
         assert len(calls) == 3  # warmup + runs
 
 
 # ---------------------------------------------------------------------------
 # LatencyBenchmark
 # ---------------------------------------------------------------------------
+
 
 class TestLatencyBenchmark:
     def test_latency_stats_populated(self):
@@ -108,6 +114,7 @@ class TestLatencyBenchmark:
 # MemoryBenchmark
 # ---------------------------------------------------------------------------
 
+
 class TestMemoryBenchmark:
     def test_memory_metrics_present(self):
         bench = MemoryBenchmark()
@@ -119,6 +126,7 @@ class TestMemoryBenchmark:
 # ---------------------------------------------------------------------------
 # QualityBenchmark scoring functions
 # ---------------------------------------------------------------------------
+
 
 class TestScoringFunctions:
     def test_mcq_exact_match(self):
@@ -147,6 +155,7 @@ class TestScoringFunctions:
 # QualityBenchmark with real prompt file
 # ---------------------------------------------------------------------------
 
+
 class TestQualityBenchmark:
     @pytest.fixture
     def prompts_dir(self, tmp_path):
@@ -154,8 +163,20 @@ class TestQualityBenchmark:
         d = tmp_path / "prompts"
         d.mkdir()
         tasks = [
-            {"id": "q1", "prompt": "What is 2+2?", "type": "mcq", "answer": "A", "category": "math"},
-            {"id": "q2", "prompt": "Name a programming language.", "type": "keywords", "keywords": ["python"], "category": "coding"},
+            {
+                "id": "q1",
+                "prompt": "What is 2+2?",
+                "type": "mcq",
+                "answer": "A",
+                "category": "math",
+            },
+            {
+                "id": "q2",
+                "prompt": "Name a programming language.",
+                "type": "keywords",
+                "keywords": ["python"],
+                "category": "coding",
+            },
         ]
         (d / "general.jsonl").write_text("\n".join(json.dumps(t) for t in tasks))
         return d
@@ -195,8 +216,8 @@ class TestQualityBenchmark:
         class MixedBackend(FakeBackend):
             def generate(self, model, prompt, **kwargs):
                 if "2+2" in prompt:
-                    return "A", 4, 1          # math: correct
-                return "no idea", 3, 2        # coding: wrong
+                    return "A", 4, 1  # math: correct
+                return "no idea", 3, 2  # coding: wrong
 
         cfg = Config()
         cfg.prompts_dir = prompts_dir

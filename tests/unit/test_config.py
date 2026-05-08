@@ -1,10 +1,5 @@
 """Tests for config module."""
 
-import os
-from pathlib import Path
-
-import pytest
-
 from llm_benchmark.config import Config, get_config
 
 
@@ -35,6 +30,7 @@ def test_results_dir_created(tmp_path):
 
 def test_get_config_singleton():
     import llm_benchmark.config as c
+
     c._default = None
     a = get_config()
     b = get_config()

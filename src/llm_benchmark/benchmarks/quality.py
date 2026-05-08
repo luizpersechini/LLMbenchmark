@@ -6,8 +6,8 @@ import json
 import re
 import statistics
 import time
-from pathlib import Path
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from ..backends.base import BaseBackend
 from ..config import Config, get_config

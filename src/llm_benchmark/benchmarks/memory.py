@@ -5,7 +5,7 @@ from __future__ import annotations
 import statistics
 import threading
 import time
-from typing import Callable
+from collections.abc import Callable
 
 import psutil
 
@@ -13,7 +13,6 @@ from ..backends.base import BaseBackend
 from ..config import Config, get_config
 from ..metrics.collector import _metal_memory_mb
 from ..metrics.types import BenchmarkResult, GenerationResult
-
 
 _MEM_PROMPT = (
     "Explain in detail the history of computing from vacuum tubes to modern "

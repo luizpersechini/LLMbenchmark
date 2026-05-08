@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import datetime
-from pathlib import Path
-from typing import Generator
 
 from ..config import Config, get_config
-from ..metrics.types import BenchmarkResult, LatencyStats
-
+from ..metrics.types import BenchmarkResult
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (

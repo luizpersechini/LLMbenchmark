@@ -8,21 +8,22 @@ import json
 import re
 import textwrap
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")  # non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 
 from ..config import Config, get_config
 
-
 # ---------------------------------------------------------------------------
 # Matplotlib PNG charts (still used by generate_charts / legacy tests)
 # ---------------------------------------------------------------------------
+
 
 def _bar_chart(
     title: str,
@@ -163,8 +164,14 @@ def _charts_as_base64(rows: list[dict[str, Any]]) -> list[str]:
         ax.set_title("Throughput (tokens/sec)", fontsize=12, fontweight="bold")
         ax.spines[["top", "right"]].set_visible(False)
         for bar, val in zip(bars, values):
-            ax.annotate(f"{val:.1f}", xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-                        xytext=(0, 3), textcoords="offset points", ha="center", fontsize=8)
+            ax.annotate(
+                f"{val:.1f}",
+                xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                xytext=(0, 3),
+                textcoords="offset points",
+                ha="center",
+                fontsize=8,
+            )
         fig.tight_layout()
         b64_images.append(_fig_to_base64(fig))
 
@@ -211,8 +218,14 @@ def _charts_as_base64(rows: list[dict[str, Any]]) -> list[str]:
             ax.set_ylabel("MB")
             ax.set_title("Peak Process Memory (RSS)", fontsize=12, fontweight="bold")
             for bar, val in zip(bars, rss):
-                ax.annotate(f"{val:.0f}", xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-                            xytext=(0, 3), textcoords="offset points", ha="center", fontsize=8)
+                ax.annotate(
+                    f"{val:.0f}",
+                    xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                    xytext=(0, 3),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=8,
+                )
         ax.spines[["top", "right"]].set_visible(False)
         fig.tight_layout()
         b64_images.append(_fig_to_base64(fig))
@@ -231,8 +244,14 @@ def _charts_as_base64(rows: list[dict[str, Any]]) -> list[str]:
         ax.set_ylim(0, 110)
         ax.spines[["top", "right"]].set_visible(False)
         for bar, val in zip(bars, scores):
-            ax.annotate(f"{val:.1f}%", xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-                        xytext=(0, 3), textcoords="offset points", ha="center", fontsize=8)
+            ax.annotate(
+                f"{val:.1f}%",
+                xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                xytext=(0, 3),
+                textcoords="offset points",
+                ha="center",
+                fontsize=8,
+            )
         fig.tight_layout()
         b64_images.append(_fig_to_base64(fig))
 
@@ -243,25 +262,26 @@ def _charts_as_base64(rows: list[dict[str, Any]]) -> list[str]:
 # Dashboard data helpers
 # ---------------------------------------------------------------------------
 
+
 def _model_family(model_id: str) -> str:
     base = model_id.lower().split(":")[0].split("/")[-1]
     patterns = [
-        (r"codellama",           "Code Llama"),
-        (r"llama(\d+)\.(\d+)",   lambda m: f"Llama {m.group(1)}.{m.group(2)}"),
-        (r"llama(\d+)",          lambda m: f"Llama {m.group(1)}"),
-        (r"gemma(\d+)",          lambda m: f"Gemma {m.group(1)}"),
-        (r"qwen(\d+)\.(\d+)",    lambda m: f"Qwen {m.group(1)}.{m.group(2)}"),
-        (r"qwen(\d+)",           lambda m: f"Qwen {m.group(1)}"),
-        (r"phi(\d+)",            lambda m: f"Phi-{m.group(1)}"),
-        (r"mistral",             "Mistral"),
-        (r"mixtral",             "Mixtral"),
-        (r"deepseek",            "DeepSeek"),
-        (r"starcoder",           "StarCoder"),
-        (r"falcon",              "Falcon"),
-        (r"vicuna",              "Vicuna"),
-        (r"wizard",              "WizardLM"),
-        (r"orca",                "Orca"),
-        (r"nous",                "Nous"),
+        (r"codellama", "Code Llama"),
+        (r"llama(\d+)\.(\d+)", lambda m: f"Llama {m.group(1)}.{m.group(2)}"),
+        (r"llama(\d+)", lambda m: f"Llama {m.group(1)}"),
+        (r"gemma(\d+)", lambda m: f"Gemma {m.group(1)}"),
+        (r"qwen(\d+)\.(\d+)", lambda m: f"Qwen {m.group(1)}.{m.group(2)}"),
+        (r"qwen(\d+)", lambda m: f"Qwen {m.group(1)}"),
+        (r"phi(\d+)", lambda m: f"Phi-{m.group(1)}"),
+        (r"mistral", "Mistral"),
+        (r"mixtral", "Mixtral"),
+        (r"deepseek", "DeepSeek"),
+        (r"starcoder", "StarCoder"),
+        (r"falcon", "Falcon"),
+        (r"vicuna", "Vicuna"),
+        (r"wizard", "WizardLM"),
+        (r"orca", "Orca"),
+        (r"nous", "Nous"),
     ]
     for pattern, name in patterns:
         m = re.search(pattern, base, re.IGNORECASE)
@@ -365,11 +385,13 @@ def _build_models_data(rows: list[dict]) -> list[dict]:
 def _get_hardware() -> dict:
     try:
         from ..metrics.collector import system_info
+
         info = system_info()
         chip = info.get("chip", "Apple Silicon")
         ram = info.get("ram_total_gb", 0)
         cpu = info.get("cpu_count", "—")
         import platform
+
         os_name = platform.mac_ver()[0]
         os_str = f"macOS {os_name}" if os_name else info.get("platform", "macOS")[:40]
         return {
@@ -399,10 +421,7 @@ def _build_run_summary(rows: list[dict]) -> dict:
             "warmup": 1,
             "promptSet": "general",
         }
-    timestamps = sorted(
-        str(r.get("timestamp", ""))[:19]
-        for r in rows if r.get("timestamp")
-    )
+    timestamps = sorted(str(r.get("timestamp", ""))[:19] for r in rows if r.get("timestamp"))
     latest_ts = timestamps[-1] if timestamps else ""
     try:
         dt = datetime.fromisoformat(latest_ts.replace("Z", "+00:00"))
@@ -443,12 +462,12 @@ def _build_run_history(rows: list[dict]) -> list[dict]:
         models = {r.get("model") for r in group if r.get("model")}
         speed_rows = [r for r in group if r.get("bench_type") == "speed" and r.get("mean_tps")]
         avg_tok = (
-            sum(float(r["mean_tps"]) for r in speed_rows) / len(speed_rows)
-            if speed_rows else 0.0
+            sum(float(r["mean_tps"]) for r in speed_rows) / len(speed_rows) if speed_rows else 0.0
         )
         top_model = (
             max(speed_rows, key=lambda r: float(r["mean_tps"]))["model"]
-            if speed_rows else (sorted(models)[0] if models else "—")
+            if speed_rows
+            else (sorted(models)[0] if models else "—")
         )
 
         try:
@@ -457,9 +476,7 @@ def _build_run_history(rows: list[dict]) -> list[dict]:
         except Exception:
             date_fmt = date_str
 
-        timestamps = sorted(
-            str(r.get("timestamp", ""))[:19] for r in group if r.get("timestamp")
-        )
+        timestamps = sorted(str(r.get("timestamp", ""))[:19] for r in group if r.get("timestamp"))
         dur_fmt = "—"
         if len(timestamps) >= 2:
             try:
@@ -506,10 +523,10 @@ def _build_prompt_breakdown(models: list[dict], spotlight_id: str) -> list[dict]
     m = next((x for x in models if x["id"] == spotlight_id), models[0] if models else None)
     if not m:
         return [
-            {"set": "coding",    "n": 20, "score": 0, "tok_s": 0.0},
+            {"set": "coding", "n": 20, "score": 0, "tok_s": 0.0},
             {"set": "reasoning", "n": 20, "score": 0, "tok_s": 0.0},
-            {"set": "math",      "n": 20, "score": 0, "tok_s": 0.0},
-            {"set": "general",   "n": 20, "score": 0, "tok_s": 0.0},
+            {"set": "math", "n": 20, "score": 0, "tok_s": 0.0},
+            {"set": "general", "n": 20, "score": 0, "tok_s": 0.0},
         ]
     q = m.get("qual", {})
     tok_s = float(m.get("tok_s") or 0.0)
@@ -535,6 +552,7 @@ def _build_mem_timeline(models: list[dict], spotlight_id: str) -> list[int]:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def _safe(val: float | None, fmt: str, suffix: str = "") -> str:
     if val is None:
         return "-"
@@ -557,31 +575,43 @@ def generate_html_report(
     mem_timeline = _build_mem_timeline(models_data, spotlight_id)
 
     if not models_data:
-        models_data = [{
-            "id": "—", "fam": "—", "params": "—", "backend": "—", "quant": "—",
-            "tok_s": 0.0, "ttft_p50": 0, "ttft_p95": 0, "ttft_p99": 0,
-            "rss": 0, "metal": 0,
-            "qual": {"coding": 0, "reasoning": 0, "math": 0, "general": 0},
-            "status": "done",
-        }]
+        models_data = [
+            {
+                "id": "—",
+                "fam": "—",
+                "params": "—",
+                "backend": "—",
+                "quant": "—",
+                "tok_s": 0.0,
+                "ttft_p50": 0,
+                "ttft_p95": 0,
+                "ttft_p99": 0,
+                "rss": 0,
+                "metal": 0,
+                "qual": {"coding": 0, "reasoning": 0, "math": 0, "general": 0},
+                "status": "done",
+            }
+        ]
         spotlight_id = "—"
 
-    data_js = "\n".join([
-        "// ─── DATA (from llm-bench SQLite results) ──────────────────────────────────",
-        f"const HARDWARE = {json.dumps(hardware, indent=2)};",
-        "",
-        f"const RUN = {json.dumps(run_summary, indent=2)};",
-        "",
-        f"const MODELS = {json.dumps(models_data, indent=2)};",
-        "",
-        f"const RUN_HISTORY = {json.dumps(run_history, indent=2)};",
-        "",
-        f"const SPOTLIGHT_ID = {json.dumps(spotlight_id)};",
-        "",
-        f"const PROMPT_BREAKDOWN = {json.dumps(prompt_breakdown, indent=2)};",
-        "",
-        f"const MEM_TIMELINE = {json.dumps(mem_timeline)};",
-    ])
+    data_js = "\n".join(
+        [
+            "// ─── DATA (from llm-bench SQLite results) ──────────────────────────────────",
+            f"const HARDWARE = {json.dumps(hardware, indent=2)};",
+            "",
+            f"const RUN = {json.dumps(run_summary, indent=2)};",
+            "",
+            f"const MODELS = {json.dumps(models_data, indent=2)};",
+            "",
+            f"const RUN_HISTORY = {json.dumps(run_history, indent=2)};",
+            "",
+            f"const SPOTLIGHT_ID = {json.dumps(spotlight_id)};",
+            "",
+            f"const PROMPT_BREAKDOWN = {json.dumps(prompt_breakdown, indent=2)};",
+            "",
+            f"const MEM_TIMELINE = {json.dumps(mem_timeline)};",
+        ]
+    )
 
     template_path = Path(__file__).parent / "dashboard_template.html"
     template = template_path.read_text(encoding="utf-8")

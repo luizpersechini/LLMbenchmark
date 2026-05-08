@@ -11,10 +11,10 @@ import psutil
 
 @dataclass
 class SystemMetrics:
-    rss_mb: float        # process resident set size
-    vms_mb: float        # process virtual memory
+    rss_mb: float  # process resident set size
+    vms_mb: float  # process virtual memory
     cpu_percent: float
-    metal_mb: float      # Metal GPU allocated (0 on non-macOS)
+    metal_mb: float  # Metal GPU allocated (0 on non-macOS)
     system_ram_used_mb: float
     system_ram_total_mb: float
 

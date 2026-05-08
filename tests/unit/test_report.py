@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from datetime import datetime, timezone
-
-import pytest
 
 from llm_benchmark.config import Config
 from llm_benchmark.metrics.types import BenchmarkResult, LatencyStats
-from llm_benchmark.report.formatter import print_result, print_comparison_table
 from llm_benchmark.report.charts import generate_charts, generate_html_report
+from llm_benchmark.report.formatter import print_comparison_table, print_result
 
 
 def _speed_result(model="m1") -> BenchmarkResult:
@@ -35,7 +32,9 @@ def _latency_result(model="m1") -> BenchmarkResult:
         backend="ollama",
         benchmark_type="latency",
         prompt_set="general",
-        latency=LatencyStats(p50_ms=100, p95_ms=200, p99_ms=250, mean_ms=120, min_ms=90, max_ms=300),
+        latency=LatencyStats(
+            p50_ms=100, p95_ms=200, p99_ms=250, mean_ms=120, min_ms=90, max_ms=300
+        ),
         runs=5,
     )
 
@@ -66,8 +65,15 @@ class TestPrintResult:
 
     def test_memory(self, capsys):
         r = BenchmarkResult(
-            model="m1", backend="b", benchmark_type="memory", prompt_set="general",
-            mean_rss_mb=400, peak_rss_mb=450, mean_metal_mb=200, peak_metal_mb=250, runs=2,
+            model="m1",
+            backend="b",
+            benchmark_type="memory",
+            prompt_set="general",
+            mean_rss_mb=400,
+            peak_rss_mb=450,
+            mean_metal_mb=200,
+            peak_metal_mb=250,
+            runs=2,
         )
         print_result(r)
 
@@ -89,14 +95,34 @@ class TestCharts:
     def _rows(self):
         ts = datetime.now(timezone.utc).isoformat()
         return [
-            {"model": "a", "backend": "ollama", "bench_type": "speed",
-             "mean_tps": 50.0, "std_tps": 1.0, "ttft_p50_ms": None,
-             "ttft_p95_ms": None, "peak_rss_mb": 500.0,
-             "mean_metal_mb": 0.0, "peak_metal_mb": 0.0, "quality_score": None, "timestamp": ts},
-            {"model": "b", "backend": "ollama", "bench_type": "speed",
-             "mean_tps": 80.0, "std_tps": 2.0, "ttft_p50_ms": None,
-             "ttft_p95_ms": None, "peak_rss_mb": 700.0,
-             "mean_metal_mb": 0.0, "peak_metal_mb": 0.0, "quality_score": None, "timestamp": ts},
+            {
+                "model": "a",
+                "backend": "ollama",
+                "bench_type": "speed",
+                "mean_tps": 50.0,
+                "std_tps": 1.0,
+                "ttft_p50_ms": None,
+                "ttft_p95_ms": None,
+                "peak_rss_mb": 500.0,
+                "mean_metal_mb": 0.0,
+                "peak_metal_mb": 0.0,
+                "quality_score": None,
+                "timestamp": ts,
+            },
+            {
+                "model": "b",
+                "backend": "ollama",
+                "bench_type": "speed",
+                "mean_tps": 80.0,
+                "std_tps": 2.0,
+                "ttft_p50_ms": None,
+                "ttft_p95_ms": None,
+                "peak_rss_mb": 700.0,
+                "mean_metal_mb": 0.0,
+                "peak_metal_mb": 0.0,
+                "quality_score": None,
+                "timestamp": ts,
+            },
         ]
 
     def test_generates_speed_chart(self, tmp_path):
@@ -117,4 +143,5 @@ class TestCharts:
         assert html.exists()
         content = html.read_text()
         assert "<html" in content
-        assert "LLM Benchmark" in content
+        assert "llm-bench" in content
+        assert "const MODELS" in content

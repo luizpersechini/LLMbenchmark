@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
-from pathlib import Path
 from typing import Any
 
 import click
@@ -31,6 +29,7 @@ cfg = get_config()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _run_all_benchmarks(
     backend_name: str,
@@ -83,12 +82,14 @@ def _run_all_benchmarks(
             elif label == "Memory":
                 kwargs["max_tokens"] = max_tokens
             elif label == "Quality":
-                kwargs = dict(backend=backend, model=model, prompt_set=prompt_set, on_progress=_on_progress)
+                kwargs = dict(
+                    backend=backend, model=model, prompt_set=prompt_set, on_progress=_on_progress
+                )
                 del kwargs["runs"]
                 del kwargs["warmup"]
 
             result = bench.run(**kwargs)
-            progress.update(_task, completed=True)
+            progress.update(task, completed=True)
             results.append(result)
             db.save(result)
 
@@ -98,6 +99,7 @@ def _run_all_benchmarks(
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 @click.group()
 @click.version_option()
@@ -143,7 +145,9 @@ def run(
     output: str,
 ) -> None:
     """Benchmark a single MODEL."""
-    results = _run_all_benchmarks(backend, model, runs, warmup, max_tokens, prompt_set, skip_quality)
+    results = _run_all_benchmarks(
+        backend, model, runs, warmup, max_tokens, prompt_set, skip_quality
+    )
 
     if output == "json":
         data = [_result_to_dict(r) for r in results]
@@ -174,7 +178,9 @@ def compare(
     all_results: list[BenchmarkResult] = []
     for model in models:
         console.rule(f"[bold]{model}[/]")
-        results = _run_all_benchmarks(backend, model, runs, warmup, max_tokens, prompt_set, skip_quality)
+        results = _run_all_benchmarks(
+            backend, model, runs, warmup, max_tokens, prompt_set, skip_quality
+        )
         all_results.extend(results)
 
     # Group by bench_type for comparison tables
@@ -204,7 +210,9 @@ def results(model: str | None, bench_type: str | None, last: int, output: str) -
         return
 
     if output == "csv":
-        import csv, io
+        import csv
+        import io
+
         buf = io.StringIO()
         w = csv.DictWriter(buf, fieldnames=rows[0].keys())
         w.writeheader()
@@ -213,10 +221,20 @@ def results(model: str | None, bench_type: str | None, last: int, output: str) -
         return
 
     # table
-    from rich.table import Table
     from rich import box
+    from rich.table import Table
+
     t = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="bold")
-    for col in ["model", "backend", "bench_type", "mean_tps", "ttft_p50_ms", "peak_rss_mb", "quality_score", "timestamp"]:
+    for col in [
+        "model",
+        "backend",
+        "bench_type",
+        "mean_tps",
+        "ttft_p50_ms",
+        "peak_rss_mb",
+        "quality_score",
+        "timestamp",
+    ]:
         t.add_column(col, overflow="fold")
     for r in rows:
         t.add_row(
@@ -226,7 +244,7 @@ def results(model: str | None, bench_type: str | None, last: int, output: str) -
             f"{r['mean_tps']:.1f}" if r.get("mean_tps") else "-",
             f"{r['ttft_p50_ms']:.0f} ms" if r.get("ttft_p50_ms") else "-",
             f"{r['peak_rss_mb']:.0f} MB" if r.get("peak_rss_mb") else "-",
-            f"{r['quality_score']*100:.1f}%" if r.get("quality_score") else "-",
+            f"{r['quality_score'] * 100:.1f}%" if r.get("quality_score") else "-",
             str(r.get("timestamp", ""))[:16],
         )
     console.print(t)
@@ -255,6 +273,7 @@ def report(last: int, open_report: bool) -> None:
 
 
 # ---------------------------------------------------------------------------
+
 
 def _result_to_dict(r: BenchmarkResult) -> dict:
     return {

@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import statistics
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from ..backends.base import BaseBackend
 from ..config import Config, get_config
 from ..metrics.types import BenchmarkResult, GenerationResult
 from .base import peak_rss_mb
-
 
 _DEFAULT_PROMPT = (
     "Write a detailed explanation of how transformer neural networks work, "

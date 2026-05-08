@@ -1,8 +1,8 @@
 """Tests for metrics.types dataclasses."""
 
-from datetime import datetime
+import pytest
 
-from llm_benchmark.metrics.types import GenerationResult, BenchmarkResult, LatencyStats
+from llm_benchmark.metrics.types import BenchmarkResult, GenerationResult, LatencyStats
 
 
 def test_generation_result_latency_ms():
@@ -34,6 +34,3 @@ def test_latency_stats():
     lat = LatencyStats(p50_ms=100, p95_ms=200, p99_ms=250, mean_ms=120, min_ms=80, max_ms=300)
     assert lat.p50_ms == 100
     assert lat.p99_ms == 250
-
-
-import pytest

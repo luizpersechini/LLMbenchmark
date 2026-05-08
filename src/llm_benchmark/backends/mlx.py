@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from .base import BackendError, BaseBackend, StreamChunk
 
@@ -29,12 +29,14 @@ class MLXBackend(BaseBackend):
     def _load(self, model: str) -> tuple:
         if model not in self._cache:
             import mlx_lm
+
             self._cache[model] = mlx_lm.load(model)
         return self._cache[model]
 
     def is_available(self) -> bool:
         try:
             import mlx_lm  # noqa: F401
+
             return True
         except ImportError:
             return False
@@ -60,6 +62,7 @@ class MLXBackend(BaseBackend):
     ) -> tuple[str, int, int]:
         try:
             import mlx_lm
+
             m, tok = self._load(model)
             output = mlx_lm.generate(
                 m,
@@ -85,6 +88,7 @@ class MLXBackend(BaseBackend):
         """MLX-LM doesn't have a native streaming API; we fake it token-by-token."""
         try:
             import mlx_lm
+
             m, tok = self._load(model)
             prompt_ids = tok.encode(prompt)
             prompt_tokens = len(prompt_ids)

@@ -1,16 +1,17 @@
 """Unit tests for backends using mocked HTTP responses."""
 
 import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
 
-from llm_benchmark.backends.base import BackendError, StreamChunk
+from llm_benchmark.backends.base import BackendError
 from llm_benchmark.backends.ollama import OllamaBackend
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_stream_response(tokens: list[str], model: str = "test") -> list[bytes]:
     """Build NDJSON bytes simulating an Ollama streaming response."""
@@ -28,6 +29,7 @@ def _make_stream_response(tokens: list[str], model: str = "test") -> list[bytes]
 # ---------------------------------------------------------------------------
 # OllamaBackend.is_available
 # ---------------------------------------------------------------------------
+
 
 class TestOllamaIsAvailable:
     def test_returns_true_when_200(self):
@@ -48,6 +50,7 @@ class TestOllamaIsAvailable:
 # ---------------------------------------------------------------------------
 # OllamaBackend.list_models
 # ---------------------------------------------------------------------------
+
 
 class TestOllamaListModels:
     def test_parses_model_names(self):
@@ -79,6 +82,7 @@ class TestOllamaListModels:
 # ---------------------------------------------------------------------------
 # OllamaBackend.generate
 # ---------------------------------------------------------------------------
+
 
 class TestOllamaGenerate:
     def test_returns_output_and_token_counts(self):
@@ -120,6 +124,7 @@ class TestOllamaGenerate:
 # OllamaBackend.stream
 # ---------------------------------------------------------------------------
 
+
 class TestOllamaStream:
     def _mock_stream_ctx(self, lines: list[bytes]):
         """Build a context manager mock that iterates lines."""
@@ -127,7 +132,7 @@ class TestOllamaStream:
         ctx.__enter__ = MagicMock(return_value=ctx)
         ctx.__exit__ = MagicMock(return_value=False)
         ctx.raise_for_status = MagicMock()
-        ctx.iter_lines = MagicMock(return_value=(l.decode() for l in lines))
+        ctx.iter_lines = MagicMock(return_value=(line.decode() for line in lines))
         return ctx
 
     def test_yields_chunks_and_final(self):
