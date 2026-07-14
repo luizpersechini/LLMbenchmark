@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-mlx = ["mlx-lm>=0.8"]
+mlx = ["mlx-lm>=0.31.3"]
 dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
